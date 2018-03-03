@@ -52,7 +52,7 @@ void InitComputer (FILE* filein, int printingRegisters, int printingMemory,
 
     k = 0;
     while (fread(&instr, 4, 1, filein)) {
-	/*swap to big endian, convert to host byte order. Ignore this.*/
+	  /*swap to big endian, convert to host byte order. Ignore this.*/
         mips.memory[k] = ntohl(endianSwap(instr));
         k++;
         if (k>MAXNUMINSTRS) {
@@ -97,9 +97,9 @@ void Simulate () {
         printf ("Executing instruction at %8.8x: %8.8x\n", mips.pc, instr);
 
         /* 
-    	 * Decode instr, putting decoded instr in d
-    	 * Note that we reuse the d struct for each instruction.
-    	 */
+    	   * Decode instr, putting decoded instr in d
+    	   * Note that we reuse the d struct for each instruction.
+    	   */
         Decode (instr, &d, &rVals);
 
         /*Print decoded instruction*/
@@ -118,16 +118,16 @@ void Simulate () {
 	      UpdatePC(&d,val);
 
         /* 
-    	 * Perform memory load or store. Place the
-    	 * address of any updated memory in *changedMem, 
-    	 * otherwise put -1 in *changedMem. 
-    	 * Return any memory value that is read, otherwise return -1.
-        */
+      	 * Perform memory load or store. Place the
+      	 * address of any updated memory in *changedMem, 
+      	 * otherwise put -1 in *changedMem. 
+      	 * Return any memory value that is read, otherwise return -1.
+         */
         val = Mem(&d, val, &changedMem);
 
         /* 
-    	 * Write back to register. If the instruction modified a register--
-    	 * (including jal, which modifies $ra) --
+      	 * Write back to register. If the instruction modified a register--
+      	 * (including jal, which modifies $ra) --
          * put the index of the modified register in *changedReg,
          * otherwise put -1 in *changedReg.
          */
@@ -194,7 +194,7 @@ unsigned int Fetch ( int addr) {
  */
 void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
     // Calculate and set opcode
-    unsigned int opcode = instr >> 26;
+    unsigned int opcode = instr >> 26;      // 31-26
     d->op = opcode;
 
     /* Check for R-format */
@@ -202,45 +202,70 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
         DEBUG_PRINT(printf("DEBUG: Instruction %8.8x is in R-format\n", instr), DEBUGGING);
 
         // set up DecodedInstr's variables here... 
-        // d->type = R;
-        // d->r.rs = ;
-        // d->r.rt = ;
-        // d->r.rd = ;
-        // d->r.shamt = ;
-        // d->r.funct = ;
-        // rVals->R_rs = mips.registers[d->r.rs];
-        // rVals->R_rt = mips.registers[d->r.rt];
-        // rVals->R_rd = mips.registers[d->r.rd];
+        d->type = R;
+        d->r.rs = instr & 0x3E00000;        // 25-21
+        d->r.rt = instr & 0x1F0000;         // 20-16
+        d->r.rd = instr & 0xF800;           // 15-11
+        d->r.shamt = instr & 0x7C0;         // 10-6
+        d->r.funct = instr & 0x3F;          // 5-0
+
+        // set up Register values here
+        rVals->R_rs = mips.registers[d->r.rs];
+        rVals->R_rt = mips.registers[d->r.rt];
+        rVals->R_rd = mips.registers[d->r.rd];
     }
     /* Check of J-format */
     else if(opcode == J || opcode == JAL) {
         DEBUG_PRINT(printf("DEBUG: Instruction %8.8x is in J-format\n", instr), DEBUGGING);
         
         // set up DecodedInstr's variables here... 
-        // d->type = J;
-        // d->j.target = ;
+        d->type = J;
+        d->j.target = instr & 0x3FFFFFF;    // 25-0
     }
     /* I-format */
     else {
         DEBUG_PRINT(printf("DEBUG: Instruction %8.8x is in I-format\n", instr), DEBUGGING);
         
         // set up DecodedInstr's variables here... 
-        // d->type = I;
-        // d->i.rs = ;
-        // d->i.rt = ;
-        // d->i.addr_or_immed = ;
-        // rVals->R_rs = mips.registers[d->r.rs];
-        // rVals->R_rt = mips.registers[d->r.rt];
+        d->type = I;
+        d->i.rs = instr & 0x3E00000;        // 25-21
+        d->i.rt = instr & 0x1F0000;         // 20-16
+        d->i.addr_or_immed = instr & 0xFFFF;// 15-0
+        
+        // set up Register values here
+        rVals->R_rs = mips.registers[d->r.rs];
+        rVals->R_rt = mips.registers[d->r.rt];
     }
 }
 
 /*
  *  Print the disassembled version of the given instruction
  *  followed by a newline.
+ *  Format:
+ *  [instruction name]\t[register1][other registers/immediate]
+ *    - [instruction name] = name of the instruction (ex: addi)
+ *    - [other registers/immediate] = can be one of the following:
+ *        1) , [register2], [register3] (ex: add $0, $0, $1)
+ *        2) , [register2], [immediate] (ex: addi $0, $0. 1)
+ *        3) , [immediate](register2) (ex: lw $1, 0($2))
+ *        4) , [immediate] (ex: j 0x0040002c)
+ *        5) [blank] (ex: jr $31)
+ *    - [register1/2/3] = register identified by number (ex: $1)
+ *    - [immediate] = can be one of the following:
+ *        1) decimal number (with negative sign if required) 
+ *        (applies toaddiu, srl, sll, lw and sw)
+ *        2) hex with leading 0x (applies to andi, ori, and lui)
+ *        3) full 8-digit hex (put leading zeros if necessary)
+ *        (applies to branch and jump instructions (except for jr))
+ *    Note: 
+ *        * All hex values must use lower-case letters. 
+ *        * The target of the branch or jump should be printed as an 
+ *        absolute address, rather than being PC relative
  */
 void PrintInstruction ( DecodedInstr* d) {
     // start after finishing Decode
     DEBUG_PRINT(printf("DEBUG: %d\n",d->type), DEBUGGING);
+
 }
 
 /* Perform computation needed to execute d, returning computed value */
