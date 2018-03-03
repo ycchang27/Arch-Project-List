@@ -1,0 +1,2 @@
+Executing instruction at 00400000: 24040003
+Instruction 24040003 is in I-format

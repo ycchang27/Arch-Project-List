@@ -15,9 +15,14 @@ void RegWrite(DecodedInstr*, int, int *);
 void UpdatePC(DecodedInstr*, int);
 void PrintInstruction (DecodedInstr*);
 
-/*Globally accessible Computer variable*/
+/* Globally accessible Computer variable */
 Computer mips;
 RegVals rVals;
+int DEBUGGING;
+enum JumpOpcode{ JAL = 3 }; // additional enum for instruction decoding
+
+/* Debug Macro */
+#define DEBUG_PRINT(print, DEBUG) if(DEBUG) print
 
 /*
  *  Return an initialized computer with the stack pointer set to the
@@ -30,8 +35,10 @@ void InitComputer (FILE* filein, int printingRegisters, int printingMemory,
     int k;
     unsigned int instr;
 
-    /* Initialize registers and memory */
+    // /* Setup debug flag */
+    DEBUGGING = debugging;
 
+    /* Initialize registers and memory */
     for (k=0; k<32; k++) {
         mips.registers[k] = 0;
     }
@@ -90,36 +97,40 @@ void Simulate () {
         printf ("Executing instruction at %8.8x: %8.8x\n", mips.pc, instr);
 
         /* 
-        * Decode instr, putting decoded instr in d
-        * Note that we reuse the d struct for each instruction.
-        */
+    	 * Decode instr, putting decoded instr in d
+    	 * Note that we reuse the d struct for each instruction.
+    	 */
         Decode (instr, &d, &rVals);
 
         /*Print decoded instruction*/
         PrintInstruction(&d);
+        
+
+        exit(0);  // stop here for now
+        
 
         /* 
-        * Perform computation needed to execute d, returning computed value 
-        * in val 
-        */
+    	   * Perform computation needed to execute d, returning computed value 
+    	   * in val 
+    	   */
         val = Execute(&d, &rVals);
 
-	    UpdatePC(&d,val);
+	      UpdatePC(&d,val);
 
         /* 
-        * Perform memory load or store. Place the
-        * address of any updated memory in *changedMem, 
-        * otherwise put -1 in *changedMem. 
-        * Return any memory value that is read, otherwise return -1.
-         */
+    	 * Perform memory load or store. Place the
+    	 * address of any updated memory in *changedMem, 
+    	 * otherwise put -1 in *changedMem. 
+    	 * Return any memory value that is read, otherwise return -1.
+        */
         val = Mem(&d, val, &changedMem);
 
         /* 
-        * Write back to register. If the instruction modified a register--
-        * (including jal, which modifies $ra) --
-        * put the index of the modified register in *changedReg,
-        * otherwise put -1 in *changedReg.
-        */
+    	 * Write back to register. If the instruction modified a register--
+    	 * (including jal, which modifies $ra) --
+         * put the index of the modified register in *changedReg,
+         * otherwise put -1 in *changedReg.
+         */
         RegWrite(&d, val, &changedReg);
 
         PrintInfo (changedReg, changedMem);
@@ -178,15 +189,49 @@ unsigned int Fetch ( int addr) {
     return mips.memory[(addr-0x00400000)/4];
 }
 
-/* Decode instr, returning decoded instruction. */
+/* Decode instr, returning decoded instruction. 
+ * Decode Specifications: https://www.d.umn.edu/~gshute/mips/instruction-types.xhtml
+ */
 void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
-    /* Your code goes here */
-    /*
-    Given an instruction, Hill out the corresponding information in a
-    DecodedInstr struct. Perform register reads and Hill the RegVals struct. The
-    addr_or_immed Hield of the IRegs struct should contain the properly extended version
-    of the 16 bits of the immediate Hield.
-    */
+    // Calculate and set opcode
+    unsigned int opcode = instr >> 26;
+    d->op = opcode;
+
+    /* Check for R-format */
+    if(opcode == R) {
+        DEBUG_PRINT(printf("DEBUG: Instruction %8.8x is in R-format\n", instr), DEBUGGING);
+
+        // set up DecodedInstr's variables here... 
+        // d->type = R;
+        // d->r.rs = ;
+        // d->r.rt = ;
+        // d->r.rd = ;
+        // d->r.shamt = ;
+        // d->r.funct = ;
+        // rVals->R_rs = mips.registers[d->r.rs];
+        // rVals->R_rt = mips.registers[d->r.rt];
+        // rVals->R_rd = mips.registers[d->r.rd];
+    }
+    /* Check of J-format */
+    else if(opcode == J || opcode == JAL) {
+        DEBUG_PRINT(printf("DEBUG: Instruction %8.8x is in J-format\n", instr), DEBUGGING);
+        
+        // set up DecodedInstr's variables here... 
+        // d->type = J;
+        // d->j.target = ;
+    }
+    /* I-format */
+    else {
+        DEBUG_PRINT(printf("DEBUG: Instruction %8.8x is in I-format\n", instr), DEBUGGING);
+        
+        // set up DecodedInstr's variables here... 
+        // d->type = I;
+        // d->i.rs = ;
+        // d->i.rt = ;
+        // d->i.addr_or_immed = ;
+        // rVals->R_rs = mips.registers[d->r.rs];
+        // rVals->R_rt = mips.registers[d->r.rt];
+    }
 }
 
 /*
@@ -194,49 +239,13 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
  *  followed by a newline.
  */
 void PrintInstruction ( DecodedInstr* d) {
-    /* Your code goes here */
-    /*
-    The PrintInstruction function prints the current instruction and its operands in text.
-    Here are the details on the output format and sample.output Hile contains the expected
-    output for sample.dump:
-        • The disassembled instruction must have the instruction name followed by a "tab"
-        character (In C, this character is '\t'), followed by a comma-and-space separated list
-        of the operations.
-        • For addiu, srl, sll, lw and sw, the immediate value must be printed as a decimal number
-        (with the negative sign, if required) with no leading zeroes unless the value is
-        exactly zero (printed as 0).
-        • For andi, ori, and lui, the immediate must be printed in hex, with a leading 0x and no
-        leading zeroes unless the value is exactly zero (which is printed as 0x0).
-        • For the branch and jump instructions (except for jr), the target must be printed as a
-        full 8-digit hex number, even if it has leading zeroes. (Note the difference between
-        this format and the branch and jump assembly language instructions that you
-        write.) Finally, the target of the branch or jump should be printed as an absolute
-        address, rather than being PC relative.
-        • All hex values must use lower-case letters and have the leading 0x.
-        • Instruction arguments must be separated by a comma followed by a single space.
-        • Registers must be identiHied by number, with no leading zeroes (e.g. $10 and $3) and
-        not by name (e.g. $t2).
-        • Terminate your output from the PrintInstruction function with a newline.
-        Here are examples of good instructions printed by PrintInstruction:
-            addiu $1, $0, -2
-            lw $1, 8($3)
-            srl $6, $7, 3
-            ori $1, $1, 0x1234
-            lui $10, 0x5678
-            j 0x0040002c
-            bne $3, $4, 0x00400044
-            jr $31
-    */
+    // start after finishing Decode
+    DEBUG_PRINT(printf("DEBUG: %d\n",d->type), DEBUGGING);
 }
 
 /* Perform computation needed to execute d, returning computed value */
 int Execute ( DecodedInstr* d, RegVals* rVals) {
     /* Your code goes here */
-    /*
-    Perform any ALU computation associated with the instruction, and return
-    the value. For a lw instruction, for example, this would involve computing the base +
-    the offset address. For this project, branch comparisons also occur in this stage.
-    */
   return 0;
 }
 
@@ -248,11 +257,6 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
 void UpdatePC ( DecodedInstr* d, int val) {
     mips.pc+=4;
     /* Your code goes here */
-    /*
-    In the UpdatePC function, you should perform the PC update associated with the current
-    instruction. For most instructions, this corresponds with an increment of 4 (which we have
-    already added).
-    */
 }
 
 /*
@@ -267,16 +271,6 @@ void UpdatePC ( DecodedInstr* d, int val) {
  */
 int Mem( DecodedInstr* d, int val, int *changedMem) {
     /* Your code goes here */
-    /*
-    Perform any memory reads or writes associated with the instruction. Note
-    that as in the Fetch function, we map the MIPS address 0x00400000 to index 0 in
-    our internal memory array, MIPS address 0x00400004 to index 1, and so forth. If
-    an instruction accesses an invalid memory address (outside of our data memory
-    range, 0x00401000 - 0x00403fff, or not word aligned for lw or sw), your code
-    must print the message, "Memory Access Exception at [PC val]: address [address]",
-    where [PC val] is the current PC, and [address] is the offending address, both printed
-    in hex (with leading 0x). Then you must call exit(0).
-    */
   return 0;
 }
 
@@ -288,8 +282,4 @@ int Mem( DecodedInstr* d, int val, int *changedMem) {
  */
 void RegWrite( DecodedInstr* d, int val, int *changedReg) {
     /* Your code goes here */
-    /*
-    Perform any register writes needed.
-    
-    */
 }
