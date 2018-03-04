@@ -201,7 +201,7 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
 
     /* R-format */
     if(opcode == R) {
-        DEBUG_PRINT(printf("DEBUG DECODE: Instruction %8.8x is in R-format\n", instr), DEBUGGING);
+        DEBUG_PRINT(printf("DEBUG DECODE: Instruction 0x%8.8x is in R-format\n", instr), DEBUGGING);
 
         // set up DecodedInstr's variables here... 
         d->type = R;
@@ -218,7 +218,7 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
     }
     /* J-format */
     else if(opcode == J || opcode == JAL) {
-        DEBUG_PRINT(printf("DEBUG DECODE: Instruction %8.8x is in J-format\n", instr), DEBUGGING);
+        DEBUG_PRINT(printf("DEBUG DECODE: Instruction 0x%8.8x is in J-format\n", instr), DEBUGGING);
         
         // set up DecodedInstr's variables here... 
         d->type = J;
@@ -226,7 +226,7 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
     }
     /* I-format */
     else {
-        DEBUG_PRINT(printf("DEBUG DECODE: Instruction %8.8x is in I-format\n", instr), DEBUGGING);
+        DEBUG_PRINT(printf("DEBUG DECODE: Instruction 0x%8.8x is in I-format\n", instr), DEBUGGING);
         
         // set up DecodedInstr's variables here... 
         d->type = I;
@@ -295,21 +295,27 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
 void UpdatePC ( DecodedInstr* d, int val) {
   /* jumps (except jr) */
   if(d->type == J) {
+    DEBUG_PRINT(printf("DEBUG UPDATEPC: j or jal to 0x%8.8x\n", d->regs.j.target), DEBUGGING);
     mips.pc = d->regs.j.target;
   }
   /* beq */
   else if(d->op == BEQ) {
-    // mips.pc += (val == 0) ? : 4;
+    DEBUG_PRINT(printf("DEBUG UPDATEPC: beq = %d\n", val), DEBUGGING);
+    mips.pc += (val == 0) ? (d->regs.i.addr_or_immed*4 + 4) : 4;
   }
+  /* bne */
   else if(d->op == BNE) {
-    // mips.pc += (val != 0) ? : 4;
+    DEBUG_PRINT(printf("DEBUG UPDATEPC: bne\n"), DEBUGGING);
+    mips.pc += (val != 0) ? (d->regs.i.addr_or_immed*4 + 4) : 4;
   }
   /* jr */
   else if(d->type == R && d->regs.r.funct == JR) {
+    DEBUG_PRINT(printf("DEBUG UPDATEPC: jr to 0x%8.8x\n", mips.registers[RA]), DEBUGGING);
     mips.pc = mips.registers[RA];
   }
   /* other instructions */
   else {
+    DEBUG_PRINT(printf("DEBUG UPDATEPC: others\n"), DEBUGGING);
     mips.pc += 4;
   }
 }
