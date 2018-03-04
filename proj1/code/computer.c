@@ -20,6 +20,8 @@ Computer mips;
 RegVals rVals;
 int DEBUGGING;
 enum JumpOpcode{ JAL = 3 }; // additional enum for instruction decoding
+enum OtherOpcodesAndFunct{ BEQ = 4, BNE = 5, JR = 8 };
+enum Registers{ RA = 31};
 
 /* Debug Macro */
 #define DEBUG_PRINT(print, DEBUG) if(DEBUG) print
@@ -35,7 +37,7 @@ void InitComputer (FILE* filein, int printingRegisters, int printingMemory,
     int k;
     unsigned int instr;
 
-    // /* Setup debug flag */
+    /* Setup debug flag */
     DEBUGGING = debugging;
 
     /* Initialize registers and memory */
@@ -194,48 +196,48 @@ unsigned int Fetch ( int addr) {
  */
 void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
     // Calculate and set opcode
-    unsigned int opcode = instr >> 26;      // 31-26
+    unsigned int opcode = instr >> 26;                  // 31-26
     d->op = opcode;
 
-    /* Check for R-format */
+    /* R-format */
     if(opcode == R) {
-        DEBUG_PRINT(printf("DEBUG: Instruction %8.8x is in R-format\n", instr), DEBUGGING);
+        DEBUG_PRINT(printf("DEBUG DECODE: Instruction %8.8x is in R-format\n", instr), DEBUGGING);
 
         // set up DecodedInstr's variables here... 
         d->type = R;
-        d->r.rs = instr & 0x3E00000;        // 25-21
-        d->r.rt = instr & 0x1F0000;         // 20-16
-        d->r.rd = instr & 0xF800;           // 15-11
-        d->r.shamt = instr & 0x7C0;         // 10-6
-        d->r.funct = instr & 0x3F;          // 5-0
+        d->regs.r.rs = (instr & 0x3E00000) >> 21;       // 25-21
+        d->regs.r.rt = (instr & 0x1F0000) >> 16;        // 20-16
+        d->regs.r.rd = (instr & 0xF800) >> 11;          // 15-11
+        d->regs.r.shamt = (instr & 0x7C0) >> 6;         // 10-6
+        d->regs.r.funct = instr & 0x3F;                 // 5-0
 
         // set up Register values here
-        rVals->R_rs = mips.registers[d->r.rs];
-        rVals->R_rt = mips.registers[d->r.rt];
-        rVals->R_rd = mips.registers[d->r.rd];
+        rVals->R_rs = mips.registers[d->regs.r.rs];
+        rVals->R_rt = mips.registers[d->regs.r.rt];
+        rVals->R_rd = mips.registers[d->regs.r.rd];
     }
-    /* Check of J-format */
+    /* J-format */
     else if(opcode == J || opcode == JAL) {
-        DEBUG_PRINT(printf("DEBUG: Instruction %8.8x is in J-format\n", instr), DEBUGGING);
+        DEBUG_PRINT(printf("DEBUG DECODE: Instruction %8.8x is in J-format\n", instr), DEBUGGING);
         
         // set up DecodedInstr's variables here... 
         d->type = J;
-        d->j.target = instr & 0x3FFFFFF;    // 25-0
+        d->regs.j.target = instr & 0x3FFFFFF;           // 25-0
     }
     /* I-format */
     else {
-        DEBUG_PRINT(printf("DEBUG: Instruction %8.8x is in I-format\n", instr), DEBUGGING);
+        DEBUG_PRINT(printf("DEBUG DECODE: Instruction %8.8x is in I-format\n", instr), DEBUGGING);
         
         // set up DecodedInstr's variables here... 
         d->type = I;
-        d->i.rs = instr & 0x3E00000;        // 25-21
-        d->i.rt = instr & 0x1F0000;         // 20-16
-        d->i.addr_or_immed = instr & 0xFFFF;// 15-0
-        
+        d->regs.i.rs = (instr & 0x3E00000) >> 21;       // 25-21
+        d->regs.i.rt = (instr & 0x1F0000) >> 16;        // 20-16
+        d->regs.i.addr_or_immed = instr & 0xFFFF;       // 15-0
         // set up Register values here
-        rVals->R_rs = mips.registers[d->r.rs];
-        rVals->R_rt = mips.registers[d->r.rt];
+        rVals->R_rs = mips.registers[d->regs.r.rs];
+        rVals->R_rt = mips.registers[d->regs.r.rt];
     }
+    DEBUG_PRINT(printf("DEBUG DECODE: Done\n"), DEBUGGING);
 }
 
 /*
@@ -270,7 +272,18 @@ void PrintInstruction ( DecodedInstr* d) {
 
 /* Perform computation needed to execute d, returning computed value */
 int Execute ( DecodedInstr* d, RegVals* rVals) {
-    /* Your code goes here */
+  /* R-format */
+  if(d->type == R) {
+
+  }
+  /* J-format */
+  else if(d->type == J) {
+
+  }
+  /* I-format */
+  else {
+
+  }
   return 0;
 }
 
@@ -280,8 +293,25 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
  * increments by 4 (which we have provided).
  */
 void UpdatePC ( DecodedInstr* d, int val) {
-    mips.pc+=4;
-    /* Your code goes here */
+  /* jumps (except jr) */
+  if(d->type == J) {
+    mips.pc = d->regs.j.target;
+  }
+  /* beq */
+  else if(d->op == BEQ) {
+    // mips.pc += (val == 0) ? : 4;
+  }
+  else if(d->op == BNE) {
+    // mips.pc += (val != 0) ? : 4;
+  }
+  /* jr */
+  else if(d->type == R && d->regs.r.funct == JR) {
+    mips.pc = mips.registers[RA];
+  }
+  /* other instructions */
+  else {
+    mips.pc += 4;
+  }
 }
 
 /*
