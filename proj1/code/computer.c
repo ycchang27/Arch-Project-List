@@ -20,8 +20,9 @@ Computer mips;
 RegVals rVals;
 int DEBUGGING;
 enum JumpOpcode{ JAL = 3 }; // additional enum for instruction decoding
-enum OtherOpcodesAndFunct{ BEQ = 4, BNE = 5, JR = 8 };
-enum Registers{ RA = 31};
+enum OtherFuncts{ SLL = 0, ADDU = 33, SUBU = 35, AND = 36, OR = 37, SLT = 42};
+enum OtherOpcodes{BEQ = 4, BNE = 5, JR = 8, ADDIU = 9, ANDI = 12, ORI = 13, LUI = 15, LW = 35, SW = 43};
+enum Registers{ RA = 31}; // specific registers
 
 /* Debug Macro */
 #define DEBUG_PRINT(print, DEBUG) if(DEBUG) print
@@ -192,7 +193,7 @@ unsigned int Fetch ( int addr) {
 }
 
 /* Decode instr, returning decoded instruction. 
- * Decode Specifications: https://www.d.umn.edu/~gshute/mips/instruction-types.xhtml
+ * Instruction Description: https://www.d.umn.edu/~gshute/mips/instruction-types.xhtml
  */
 void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
     // Calculate and set opcode
@@ -232,7 +233,10 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
         d->type = I;
         d->regs.i.rs = (instr & 0x3E00000) >> 21;       // 25-21
         d->regs.i.rt = (instr & 0x1F0000) >> 16;        // 20-16
-        d->regs.i.addr_or_immed = instr & 0xFFFF;       // 15-0
+
+        // sign extend immediate (15-0)
+        d->regs.i.addr_or_immed = ((int32_t)(int16_t)instr) & 0xFFFF;
+
         // set up Register values here
         rVals->R_rs = mips.registers[d->regs.r.rs];
         rVals->R_rt = mips.registers[d->regs.r.rt];
@@ -272,19 +276,96 @@ void PrintInstruction ( DecodedInstr* d) {
 
 /* Perform computation needed to execute d, returning computed value */
 int Execute ( DecodedInstr* d, RegVals* rVals) {
+  int function = (d->type == R) ? d->regs.r.funct : d->op;
+  int val = 0;
   /* R-format */
   if(d->type == R) {
+    DEBUG_PRINT(printf("DEBUG EXECUTE: R-FORMAT"), DEBUGGING);
+    function = d->regs.r.funct;
+    int rs = rVals->R_rs, rt = rVals->R_rt;
 
-  }
-  /* J-format */
-  else if(d->type == J) {
-
+    /* SHIFT instruction */
+    if(d->regs.r.shamt != 0) {
+      DEBUG_PRINT(printf("DEBUG EXECUTE: SHIFT"), DEBUGGING);
+      int shamt = d->regs.r.shamt;
+      val = (function == SLL) ? rt << shamt : rt >> shamt;
+    }
+    /* ADD instruction */
+    else if(function == ADDU) {
+      DEBUG_PRINT(printf("DEBUG EXECUTE: ADD"), DEBUGGING);
+      val = rs + rt;
+    }
+    /* SUB instruction */
+    else if(function == SUBU && function == SLT) {
+      DEBUG_PRINT(printf("DEBUG EXECUTE: SUB"), DEBUGGING);
+      val = rs - rt;
+    }
+    /* OR instruction */
+    else if(function == OR) {
+      DEBUG_PRINT(printf("DEBUG EXECUTE: OR"), DEBUGGING);
+      val = rs | rt;
+    }
+    /* AND instruction */
+    else if(function == AND) {
+      DEBUG_PRINT(printf("DEBUG EXECUTE: AND"), DEBUGGING);
+      val = rs & rt;
+    }
+    /* Invalid instruction */
+    else {
+      DEBUG_PRINT(printf("DEBUG EXECUTE: INVALID INSTRUCTION"), DEBUGGING);
+      exit(0);
+    }
+    
+    return val;
   }
   /* I-format */
-  else {
+  else if(d->type == I) {
+    DEBUG_PRINT(printf("DEBUG EXECUTE: I-FORMAT"), DEBUGGING);
+    function = d->op;
+    int rs = rVals->R_rs, imm = d->regs.i.addr_or_immed;
 
+    /* ADD instruction */
+    if(function == ADDIU) {
+      DEBUG_PRINT(printf("DEBUG EXECUTE: ADD"), DEBUGGING);
+      val = rs + imm;
+    }
+    /* BRANCH instruction */
+    else if(function == BEQ || function == BNE) {
+      DEBUG_PRINT(printf("DEBUG EXECUTE: SUB"), DEBUGGING);
+      int rt = rVals->R_rt;
+      val = (rs == rt);
+    }
+    /* SW/LW instruction */
+    else if(function == SW || function == LW) {
+      DEBUG_PRINT(printf("DEBUG EXECUTE: SW/LW"), DEBUGGING);
+      val = rs + imm;
+    }
+    /* ORI instruction */
+    else if(function == ORI) {
+      DEBUG_PRINT(printf("DEBUG EXECUTE: ORI"), DEBUGGING);
+      val = rs | imm;
+    }
+    /* AND instruction */
+    else if(function == ANDI) {
+      DEBUG_PRINT(printf("DEBUG EXECUTE: ANDI"), DEBUGGING);
+      val = rs & imm;
+    }
+    /* LUI instruction */
+    else if(function == LUI) {
+      DEBUG_PRINT(printf("DEBUG EXECUTE: LUI"), DEBUGGING);
+      val = 0; // do nothing
+    }
+    /* Invalid instruction */
+    else {
+      DEBUG_PRINT(printf("DEBUG EXECUTE: INVALID INSTRUCTION"), DEBUGGING);
+      exit(0);
+    }
+    
+    return val;
   }
-  return 0;
+  /* J-format */
+  DEBUG_PRINT(printf("DEBUG EXECUTE: J-FORMAT"), DEBUGGING);
+  return val;
 }
 
 /* 
@@ -331,7 +412,7 @@ void UpdatePC ( DecodedInstr* d, int val) {
  *
  */
 int Mem( DecodedInstr* d, int val, int *changedMem) {
-    /* Your code goes here */
+  /* Your code goes here */
   return 0;
 }
 
