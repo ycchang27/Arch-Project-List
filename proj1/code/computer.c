@@ -390,8 +390,8 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
     int rs = rVals->R_rs, imm = d->regs.i.addr_or_immed;
 
     /* ADD instruction */
-    if(function == ADDIU) {
-      val = rs + imm;
+    if(function == ADDIU || function == LW || function == SW) {
+      val = (function == ADDIU) ? rs + imm : mips.memory[rs] + imm;
       // // DEBUG_PRINT(printf("DEBUG EXECUTE: ADD. val = %d\n", val), DEBUGGING);
     }
     /* BRANCH instruction */
@@ -485,11 +485,16 @@ int Mem( DecodedInstr* d, int val, int *changedMem) {
     *changedMem = -1;
     return val;
   }
-  /* Work in progress */
-  // int rt = d->regs.r.rt;
-  // mips.registers[rt] = val;
-  // mips.memory[(val-0x00400000)/4] = 
-  return 0;
+  /* SW */
+  if(function == SW) {
+    int rt = d->regs.r.rt;
+    mips.memory[(val-0x00400000)/4] = mips.registers[rt];
+    return 0;
+  }
+  /* LW */
+  else {
+    return mips.memory[(val-0x00400000)/4];
+  }
 }
 
 /* 
@@ -515,27 +520,34 @@ void RegWrite( DecodedInstr* d, int val, int *changedReg) {
     mips.registers[rd] = val;
     *changedReg = rd;
   }
+  /* LUI */
+  else if(function == LUI) {
+    int rt = d->regs.r.rt;
+    int shifted_imm = d->regs.i.addr_or_immed << 16;
+    mips.registers[rt] = shifted_imm;
+    *changedReg = rt;
+  }
   /* LW */
   else if(function == LW) {
     // // DEBUG_PRINT(printf("DEBUG REGWRITE: LW\n"), DEBUGGING);
-    // work in progress
+    int rt = d->regs.r.rt;
+    mips.registers[rt] = val;
+    *changedReg = rt;
   }
   /* I-format (except JAL) */
   else if(function != JAL && d->type == I) {
     // // DEBUG_PRINT(printf("DEBUG REGWRITE: I-FORMAT (NO JAL). val = %d\n", val), DEBUGGING);
     // Write to register
-    int rt = d->regs.r.rt;
+    int rt = d->regs.i.rt;
     mips.registers[rt] = val;
     *changedReg = rt;
     // // DEBUG_PRINT(printf("DEBUG REGWRITE: changedReg = %d\n", *changedReg), DEBUGGING);
   }
   /* JAL */
-  else {
+  else if(function == JAL) {
     // // DEBUG_PRINT(printf("DEBUG REGWRITE: JAL\n"), DEBUGGING);
-    if(function == JAL) {
-      // Write to register
-      mips.registers[RA] = val;
-      *changedReg = RA;
-    }
+    // Write to register
+    mips.registers[RA] = val;
+    *changedReg = RA;
   }
 }
