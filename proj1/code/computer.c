@@ -42,6 +42,7 @@ void fillin(){
 	Aop[4] = "beq";
 	Aop[5] = "bne";
 	Aop[2] = "j";
+	Aop[3] = "jal";
 	Aop[8] = "jr";
 	Aop[35] = "lw";
 	Aop[43] = "sw";
@@ -60,6 +61,7 @@ void fillin(){
 	Afuct[4] = "beq";
 	Afuct[5] = "bne";
 	Afuct[2] = "j";
+	Afuct[3] = "jal";
 	Afuct[8] = "jr";
 	Afuct[35] = "lw";
 	Afuct[43] = "sw";    
