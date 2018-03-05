@@ -333,7 +333,10 @@ void PrintInstruction ( DecodedInstr* d) {
     }
 
     else if(d->type == I && (Aop[d->op] == "sw" || Aop[d->op] == "lw")){
-            printf("%s $%i, %i($%i)\n" ,Aop[d->op], d->regs.i.rs, d->regs.i.rt, d->regs.i.addr_or_immed);
+            printf("%s $%i, %i($%i)\n" ,Aop[d->op], d->regs.i.rt, d->regs.i.addr_or_immed, d->regs.i.rs);
+    }
+    else if(d->type == I && Aop[d->op] == "lui"){
+            printf("%s $%i, %i\n" ,Aop[d->op], d->regs.i.rt, d->regs.i.addr_or_immed);
     }
     else if(d->type == I){
             printf("%s $%i, $%i, %i\n" ,Aop[d->op], d->regs.i.rt, d->regs.i.rs, d->regs.i.addr_or_immed);
