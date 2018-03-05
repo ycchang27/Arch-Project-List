@@ -153,16 +153,16 @@ void Simulate () {
         PrintInstruction(&d);
         
 
-        exit(0);  // stop here for now
+       //exit(0);  // stop here for now
         
 
         /* 
     	   * Perform computation needed to execute d, returning computed value 
     	   * in val 
     	   */
-        val = Execute(&d, &rVals);
+        //val = Execute(&d, &rVals);
 
-	      UpdatePC(&d,val);
+	     // UpdatePC(&d,val);
 
         /* 
       	 * Perform memory load or store. Place the
@@ -170,7 +170,7 @@ void Simulate () {
       	 * otherwise put -1 in *changedMem. 
       	 * Return any memory value that is read, otherwise return -1.
          */
-        val = Mem(&d, val, &changedMem);
+       // val = Mem(&d, val, &changedMem);
 
         /* 
       	 * Write back to register. If the instruction modified a register--
@@ -178,9 +178,9 @@ void Simulate () {
          * put the index of the modified register in *changedReg,
          * otherwise put -1 in *changedReg.
          */
-        RegWrite(&d, val, &changedReg);
+        //RegWrite(&d, val, &changedReg);
 
-        PrintInfo (changedReg, changedMem);
+        //PrintInfo (changedReg, changedMem);
     }
 }
 
