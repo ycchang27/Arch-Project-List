@@ -369,9 +369,13 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
       val = rs + rt;
     }
     /* SUB instruction */
-    else if(function == SUBU || function == SLT) {
+    else if(function == SUBU) {
       // // DEBUG_PRINT(printf("DEBUG EXECUTE: SUB\n"), DEBUGGING);
       val = rs - rt;
+    }
+    /* < instruction */
+    else if(function == SLT) {
+      val = (rs < rt);
     }
     /* OR instruction */
     else if(function == OR) {
@@ -399,8 +403,8 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
 
     /* ADD instruction */
     if(function == ADDIU || function == LW || function == SW) {
-      //val = (function == ADDIU) ? rs + imm : mips.memory[rs] + imm;
-      val = rs + imm;
+      val = (function == ADDIU) ? rs + imm : mips.memory[rs] + imm;
+      //val = rs + imm;
       // // DEBUG_PRINT(printf("DEBUG EXECUTE: ADD. val = %d\n", val), DEBUGGING);
     }
     /* BRANCH instruction */

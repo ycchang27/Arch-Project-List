@@ -1,123 +1,126 @@
-Executing instruction at 00400000: 3c010000
-lui $1, $0, 0
+Executing instruction at 00400000: 3c101234
+lui $16, 4660
 New pc = 00400004
-Updated r01 to 00000000
+Updated r16 to 12340000
 No memory location was updated.
-Executing instruction at 00400004: 34210005
-ori $1, $1, 5
+Executing instruction at 00400004: 36105670
+ori $16, $16, 22128
 New pc = 00400008
-Updated r01 to 00000005
+Updated r16 to 12345670
 No memory location was updated.
-Executing instruction at 00400008: 00015021
-addu $10, $0, $1
+Executing instruction at 00400008: 24080070
+addiu $8, $0, 112
 New pc = 0040000c
-Updated r10 to 00000005
+Updated r08 to 00000070
 No memory location was updated.
-Executing instruction at 0040000c: 3c010000
-lui $1, $0, 0
+Executing instruction at 0040000c: 02088023
+subu $16, $16, $8
 New pc = 00400010
-Updated r01 to 00000000
+Updated r16 to 12345600
 No memory location was updated.
-Executing instruction at 00400010: 34210006
-ori $1, $1, 6
+Executing instruction at 00400010: 2610aa00
+addiu $16, $16, -22016
 New pc = 00400014
-Updated r01 to 00000006
+Updated r16 to 12340000
 No memory location was updated.
-Executing instruction at 00400014: 00015821
-addu $11, $0, $1
+Executing instruction at 00400014: 24090001
+addiu $9, $0, 1
 New pc = 00400018
-Updated r11 to 00000006
+Updated r09 to 00000001
 No memory location was updated.
-Executing instruction at 00400018: 014b4821
-addu $9, $10, $11
+Executing instruction at 00400018: 00094900
+sll $9, $0, $9
 New pc = 0040001c
-Updated r09 to 0000000b
+Updated r09 to 00000010
 No memory location was updated.
-Executing instruction at 0040001c: 2529002a
-addiu $9, $9, 42
+Executing instruction at 0040001c: 00094842
+j $9, $0, $9
 New pc = 00400020
-Updated r09 to 00000035
+Updated r09 to 00000008
 No memory location was updated.
-Executing instruction at 00400020: 016a5023
-subu $10, $11, $10
+Executing instruction at 00400020: 02098021
+addu $16, $16, $9
 New pc = 00400024
-Updated r10 to 00000001
+Updated r16 to 12340008
 No memory location was updated.
-Executing instruction at 00400024: 0009c080
-sll $24, $0, $9
+Executing instruction at 00400024: 24095670
+addiu $9, $0, 22128
 New pc = 00400028
-Updated r24 to 000000d4
+Updated r09 to 00005670
 No memory location was updated.
-Executing instruction at 00400028: 0018c882
-j $25, $0, $24
+Executing instruction at 00400028: 02098025
+or $16, $16, $9
 New pc = 0040002c
-Updated r25 to 00000035
+Updated r16 to 12345678
 No memory location was updated.
-Executing instruction at 0040002c: 010a4824
-and $9, $8, $10
+Executing instruction at 0040002c: 240a5678
+addiu $10, $0, 22136
 New pc = 00400030
-Updated r09 to 00000000
+Updated r10 to 00005678
 No memory location was updated.
-Executing instruction at 00400030: 314a0001
-andi $10, $10, 1
+Executing instruction at 00400030: 020a8024
+and $16, $16, $10
 New pc = 00400034
+Updated r16 to 00005678
+No memory location was updated.
+Executing instruction at 00400034: 3c011234
+lui $1, 4660
+New pc = 00400038
+Updated r01 to 12340000
+No memory location was updated.
+Executing instruction at 00400038: 34210000
+ori $1, $1, 0
+New pc = 0040003c
+Updated r01 to 12340000
+No memory location was updated.
+Executing instruction at 0040003c: 02018024
+and $16, $16, $1
+New pc = 00400040
+Updated r16 to 00000000
+No memory location was updated.
+Executing instruction at 00400040: 240a0001
+addiu $10, $0, 1
+New pc = 00400044
 Updated r10 to 00000001
 No memory location was updated.
-Executing instruction at 00400034: 01094025
-or $8, $8, $9
-New pc = 00400038
-Updated r08 to 00000000
-No memory location was updated.
-Executing instruction at 00400038: 354a00ff
-ori $10, $10, 255
-New pc = 0040003c
-Updated r10 to 000000ff
-No memory location was updated.
-Executing instruction at 0040003c: 3c0affff
-lui $10, $0, -1
-New pc = 00400040
-Updated r10 to ffff0000
-No memory location was updated.
-Executing instruction at 00400040: 0109502a
-slt $10, $8, $9
-New pc = 00400044
-Updated r10 to 00000000
-No memory location was updated.
-Executing instruction at 00400044: 11400000
-beq $10, $0, 0x00400048
+Executing instruction at 00400044: 0150582a
+slt $11, $10, $16
 New pc = 00400048
+Updated r11 to 00000000
+No memory location was updated.
+
+Executing instruction at 00400048: 11600001
+beq $11, $0, 0x00400050
+New pc = 00400050
 No register was updated.
 No memory location was updated.
-Executing instruction at 00400048: 3c010000
-lui $1, $0, 0
-New pc = 0040004c
-Updated r01 to 00000000
-No memory location was updated.
-Executing instruction at 0040004c: 3421001f
-ori $1, $1, 31
-New pc = 00400050
-Updated r01 to 0000001f
-No memory location was updated.
-Executing instruction at 00400050: 00015021
-addu $10, $0, $1
+
+Executing instruction at 00400050: 240c0001
+addiu $12, $0, 1
 New pc = 00400054
-Updated r10 to 0000001f
+Updated r12 to 00000001
 No memory location was updated.
-Executing instruction at 00400054: 15400000
-bne $10, $0, 0x00400058
+Executing instruction at 00400054: 1564fffd
+bne $11, $4, 0x0040004c
 New pc = 00400058
-Updated r00 to 00000000
+Updated r04 to 00000001
 No memory location was updated.
-Executing instruction at 00400058: 08100017
-j 0x0040005c
+
+Executing instruction at 00400058: 0c100018
+jal 0x00400060
+New pc = 00400060
+Updated r31 to 0040005c
+No memory location was updated.
+Executing instruction at 00400060: 03e00008
+
+jr $0, $31, $0
 New pc = 0040005c
 No register was updated.
 No memory location was updated.
-Executing instruction at 0040005c: 0c10001a
-jal 0x00400068
-New pc = 00400068
-Updated r31 to 00400060
+Executing instruction at 0040005c: 08100013
+
+j 0x0040004c
+New pc = 0040004c
+No register was updated.
 No memory location was updated.
-Executing instruction at 00400068: 8f890004
-lw $28, 9($4)
-Memory Access Exception at [0x0040006c]: address [0x00000004]
+Executing instruction at 0040004c: 20080001
