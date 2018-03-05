@@ -9,7 +9,7 @@ New pc = 00400008
 Updated r05 to 00000002
 No memory location was updated.
 Executing instruction at 00400008: 0c100004
-jal 0x4194320
+jal 0x00400010
 New pc = 00400010
 Updated r31 to 0040000c
 No memory location was updated.
@@ -34,7 +34,7 @@ New pc = 00400020
 Updated r04 to 00000002
 No memory location was updated.
 Executing instruction at 00400020: 08100005
-j 0x4194324
+j 0x00400014
 New pc = 00400014
 No register was updated.
 No memory location was updated.
@@ -54,7 +54,7 @@ New pc = 00400020
 Updated r04 to 00000001
 No memory location was updated.
 Executing instruction at 00400020: 08100005
-j 0x4194324
+j 0x00400014
 New pc = 00400014
 No register was updated.
 No memory location was updated.
@@ -74,7 +74,7 @@ New pc = 00400020
 Updated r04 to 00000000
 No memory location was updated.
 Executing instruction at 00400020: 08100005
-j 0x4194324
+j 0x00400014
 New pc = 00400014
 No register was updated.
 No memory location was updated.
@@ -85,12 +85,7 @@ No register was updated.
 No memory location was updated.
 Executing instruction at 00400024: 03e00008
 jr $31, $0, 0
-Execute:JR
-UpdatePC:JR
-MEM:JR
-MEM:JR
 New pc = 0040000c
-Updated r00 to 00000000
+No register was updated.
 No memory location was updated.
 Executing instruction at 0040000c: 20000000
-jr $0, $0, 0

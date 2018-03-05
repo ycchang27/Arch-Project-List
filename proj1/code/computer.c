@@ -44,7 +44,6 @@ void fillin(){
     Aop[5] = "bne";
     Aop[2] = "j";
     Aop[3] = "jal";
-    Aop[8] = "jr";
     Aop[35] = "lw";
     Aop[43] = "sw";
 
@@ -254,6 +253,11 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
         d->regs.r.shamt = (instr & 0x7C0) >> 6;         // 10-6
         d->regs.r.funct = instr & 0x3F;                 // 5-0
 
+        /* The instruction does not exist */
+        if(Afuct[d->regs.r.funct] == NULL) {
+          exit(0);
+        }
+
         // set up Register values here
         rVals->R_rs = mips.registers[d->regs.r.rs];
         rVals->R_rt = mips.registers[d->regs.r.rt];
@@ -270,7 +274,11 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
     /* I-format */
     else {
         // // DEBUG_PRINT(printf("DEBUG DECODE: Instruction 0x%8.8x is in I-format\n", instr), DEBUGGING);
-        
+        /* The instruction does not exist */
+        if(Aop[opcode] == NULL) {
+          exit(0);
+        }
+
         // set up DecodedInstr's variables here... 
         d->type = I;
         d->regs.i.rs = (instr & 0x3E00000) >> 21;       // 25-21
@@ -314,7 +322,7 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
 
 void PrintInstruction ( DecodedInstr* d) {
     // start after finishing Decode
-    // DEBUG_PRINT(printf("DEBUG: %d\n",d->type), DEBUGGING);
+    //DEBUG_PRINT(printf("DEBUG: %d\n",d->type), DEBUGGING);
 
 
     if(d->type == R){
@@ -323,8 +331,11 @@ void PrintInstruction ( DecodedInstr* d) {
     if(d->type == I){
             printf("%s $%i, $%i, %i\n" ,Aop[d->op], d->regs.i.rs, d->regs.i.rt, d->regs.i.addr_or_immed);
     }
+    else if(d->type == I && Aop[d->op] == "beq"){
+            printf("%s $%i, $%i, 0x%8.8x\n" ,Aop[d->op], d->regs.i.rs, d->regs.i.rt, d->regs.i.addr_or_immed);
+    }
     if(d->type == J){
-            printf("%s 0x%i\n" ,Aop[d->op], d->regs.j.target);
+            printf("%s 0x%8.8x\n" ,Aop[d->op], d->regs.j.target);
     }
 }
 
@@ -419,9 +430,6 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
   }
   /* J-format */
   // // DEBUG_PRINT(printf("DEBUG EXECUTE: J-FORMAT\n"), DEBUGGING);
-  if(function == JR) {
-    printf("Execute:JR%d\n",mips.registers[RA]);
-  }
   return val;
 }
 
@@ -451,7 +459,6 @@ void UpdatePC ( DecodedInstr* d, int* val) {
   else if(d->type == R && d->regs.r.funct == JR) {
     // // DEBUG_PRINT(printf("DEBUG UPDATEPC: JR to 0x%8.8x\n", mips.registers[RA]), DEBUGGING);
     mips.pc = mips.registers[RA];
-    printf("UpdatePC:JR\n");
   }
   /* other instructions */
   else {
@@ -473,9 +480,6 @@ void UpdatePC ( DecodedInstr* d, int* val) {
  */
 int Mem( DecodedInstr* d, int val, int *changedMem) {
   int function = d->op;
-  if(d->regs.r.funct == JR) {
-    printf("MEM:JR\n");
-  }
   if(function != SW && function != LW) {
     // // DEBUG_PRINT(printf("DEBUG MEM: NOT LW OR SW\n"), DEBUGGING);
     *changedMem = -1;
@@ -496,11 +500,8 @@ int Mem( DecodedInstr* d, int val, int *changedMem) {
  */
 void RegWrite( DecodedInstr* d, int val, int *changedReg) {
   int function = d->op;
-  if(d->regs.r.funct == JR) {
-    printf("MEM:JR\n");
-  }
   /* No reg write case */
-  if(d->type != R && (function == BEQ || function == J || function == JR || function == SW)) {
+  if(d->regs.r.funct == JR || (d->type != R && (function == BEQ || function == J || function == SW))) {
     // // DEBUG_PRINT(printf("DEBUG REGWRITE: NO WRITE\n"), DEBUGGING);
     *changedReg = -1;
   }
