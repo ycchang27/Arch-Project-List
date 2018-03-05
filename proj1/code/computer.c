@@ -106,11 +106,7 @@ void Simulate () {
         Decode (instr, &d, &rVals);
 
         /*Print decoded instruction*/
-        PrintInstruction(&d);
-        
-
-        exit(0);  // stop here for now
-        
+        PrintInstruction(&d); 
 
         /* 
     	   * Perform computation needed to execute d, returning computed value 
@@ -223,7 +219,7 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
         
         // set up DecodedInstr's variables here... 
         d->type = J;
-        d->regs.j.target = instr & 0x3FFFFFF;           // 25-0
+        d->regs.j.target = (instr & 0x3FFFFFF)*4;           // 25-0
     }
     /* I-format */
     else {
@@ -280,39 +276,39 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
   int val = 0;
   /* R-format */
   if(d->type == R) {
-    DEBUG_PRINT(printf("DEBUG EXECUTE: R-FORMAT"), DEBUGGING);
+    DEBUG_PRINT(printf("DEBUG EXECUTE: R-FORMAT\n"), DEBUGGING);
     function = d->regs.r.funct;
     int rs = rVals->R_rs, rt = rVals->R_rt;
 
     /* SHIFT instruction */
     if(d->regs.r.shamt != 0) {
-      DEBUG_PRINT(printf("DEBUG EXECUTE: SHIFT"), DEBUGGING);
+      DEBUG_PRINT(printf("DEBUG EXECUTE: SHIFT\n"), DEBUGGING);
       int shamt = d->regs.r.shamt;
       val = (function == SLL) ? rt << shamt : rt >> shamt;
     }
     /* ADD instruction */
     else if(function == ADDU) {
-      DEBUG_PRINT(printf("DEBUG EXECUTE: ADD"), DEBUGGING);
+      DEBUG_PRINT(printf("DEBUG EXECUTE: ADD\n"), DEBUGGING);
       val = rs + rt;
     }
     /* SUB instruction */
     else if(function == SUBU && function == SLT) {
-      DEBUG_PRINT(printf("DEBUG EXECUTE: SUB"), DEBUGGING);
+      DEBUG_PRINT(printf("DEBUG EXECUTE: SUB\n"), DEBUGGING);
       val = rs - rt;
     }
     /* OR instruction */
     else if(function == OR) {
-      DEBUG_PRINT(printf("DEBUG EXECUTE: OR"), DEBUGGING);
+      DEBUG_PRINT(printf("DEBUG EXECUTE: OR\n"), DEBUGGING);
       val = rs | rt;
     }
     /* AND instruction */
     else if(function == AND) {
-      DEBUG_PRINT(printf("DEBUG EXECUTE: AND"), DEBUGGING);
+      DEBUG_PRINT(printf("DEBUG EXECUTE: AND\n"), DEBUGGING);
       val = rs & rt;
     }
     /* Invalid instruction */
     else {
-      DEBUG_PRINT(printf("DEBUG EXECUTE: INVALID INSTRUCTION"), DEBUGGING);
+      DEBUG_PRINT(printf("DEBUG EXECUTE: INVALID INSTRUCTION\n"), DEBUGGING);
       exit(0);
     }
     
@@ -320,51 +316,51 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
   }
   /* I-format */
   else if(d->type == I) {
-    DEBUG_PRINT(printf("DEBUG EXECUTE: I-FORMAT"), DEBUGGING);
+    DEBUG_PRINT(printf("DEBUG EXECUTE: I-FORMAT\n"), DEBUGGING);
     function = d->op;
     int rs = rVals->R_rs, imm = d->regs.i.addr_or_immed;
 
     /* ADD instruction */
     if(function == ADDIU) {
-      DEBUG_PRINT(printf("DEBUG EXECUTE: ADD"), DEBUGGING);
       val = rs + imm;
+      DEBUG_PRINT(printf("DEBUG EXECUTE: ADD. val = %d\n", val), DEBUGGING);
     }
     /* BRANCH instruction */
     else if(function == BEQ || function == BNE) {
-      DEBUG_PRINT(printf("DEBUG EXECUTE: SUB"), DEBUGGING);
+      DEBUG_PRINT(printf("DEBUG EXECUTE: SUB\n"), DEBUGGING);
       int rt = rVals->R_rt;
       val = (rs == rt);
     }
     /* SW/LW instruction */
     else if(function == SW || function == LW) {
-      DEBUG_PRINT(printf("DEBUG EXECUTE: SW/LW"), DEBUGGING);
+      DEBUG_PRINT(printf("DEBUG EXECUTE: SW/LW\n"), DEBUGGING);
       val = rs + imm;
     }
     /* ORI instruction */
     else if(function == ORI) {
-      DEBUG_PRINT(printf("DEBUG EXECUTE: ORI"), DEBUGGING);
+      DEBUG_PRINT(printf("DEBUG EXECUTE: ORI\n"), DEBUGGING);
       val = rs | imm;
     }
     /* AND instruction */
     else if(function == ANDI) {
-      DEBUG_PRINT(printf("DEBUG EXECUTE: ANDI"), DEBUGGING);
+      DEBUG_PRINT(printf("DEBUG EXECUTE: ANDI\n"), DEBUGGING);
       val = rs & imm;
     }
     /* LUI instruction */
     else if(function == LUI) {
-      DEBUG_PRINT(printf("DEBUG EXECUTE: LUI"), DEBUGGING);
+      DEBUG_PRINT(printf("DEBUG EXECUTE: LUI\n"), DEBUGGING);
       val = 0; // do nothing
     }
     /* Invalid instruction */
     else {
-      DEBUG_PRINT(printf("DEBUG EXECUTE: INVALID INSTRUCTION"), DEBUGGING);
+      DEBUG_PRINT(printf("DEBUG EXECUTE: INVALID INSTRUCTION\n"), DEBUGGING);
       exit(0);
     }
     
     return val;
   }
   /* J-format */
-  DEBUG_PRINT(printf("DEBUG EXECUTE: J-FORMAT"), DEBUGGING);
+  DEBUG_PRINT(printf("DEBUG EXECUTE: J-FORMAT\n"), DEBUGGING);
   return val;
 }
 
@@ -376,29 +372,31 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
 void UpdatePC ( DecodedInstr* d, int val) {
   /* jumps (except jr) */
   if(d->type == J) {
-    DEBUG_PRINT(printf("DEBUG UPDATEPC: j or jal to 0x%8.8x\n", d->regs.j.target), DEBUGGING);
+    DEBUG_PRINT(printf("DEBUG UPDATEPC: J or JAL to 0x%8.8x\n", d->regs.j.target), DEBUGGING);
+    val = mips.pc; // save PC in case of jump and link
     mips.pc = d->regs.j.target;
   }
   /* beq */
   else if(d->op == BEQ) {
-    DEBUG_PRINT(printf("DEBUG UPDATEPC: beq = %d\n", val), DEBUGGING);
+    DEBUG_PRINT(printf("DEBUG UPDATEPC: BEQ = %d\n", val), DEBUGGING);
     mips.pc += (val == 0) ? (d->regs.i.addr_or_immed*4 + 4) : 4;
   }
   /* bne */
   else if(d->op == BNE) {
-    DEBUG_PRINT(printf("DEBUG UPDATEPC: bne\n"), DEBUGGING);
+    DEBUG_PRINT(printf("DEBUG UPDATEPC: BNE\n"), DEBUGGING);
     mips.pc += (val != 0) ? (d->regs.i.addr_or_immed*4 + 4) : 4;
   }
   /* jr */
   else if(d->type == R && d->regs.r.funct == JR) {
-    DEBUG_PRINT(printf("DEBUG UPDATEPC: jr to 0x%8.8x\n", mips.registers[RA]), DEBUGGING);
+    DEBUG_PRINT(printf("DEBUG UPDATEPC: JR to 0x%8.8x\n", mips.registers[RA]), DEBUGGING);
     mips.pc = mips.registers[RA];
   }
   /* other instructions */
   else {
-    DEBUG_PRINT(printf("DEBUG UPDATEPC: others\n"), DEBUGGING);
+    DEBUG_PRINT(printf("DEBUG UPDATEPC: OTHER INSTRUCTIONS\n"), DEBUGGING);
     mips.pc += 4;
   }
+  DEBUG_PRINT(printf("DEBUG UPDATEPC: New PC = %8.8x\n", mips.pc), DEBUGGING);
 }
 
 /*
@@ -412,7 +410,16 @@ void UpdatePC ( DecodedInstr* d, int val) {
  *
  */
 int Mem( DecodedInstr* d, int val, int *changedMem) {
-  /* Your code goes here */
+  int function = d->op;
+  if(function != SW && function != LW) {
+    DEBUG_PRINT(printf("DEBUG MEM: NOT LW OR SW\n"), DEBUGGING);
+    *changedMem = -1;
+    return val;
+  }
+  /* Work in progress */
+  // int rt = d->regs.r.rt;
+  // mips.registers[rt] = val;
+  // mips.memory[(val-0x00400000)/4] = 
   return 0;
 }
 
@@ -423,5 +430,43 @@ int Mem( DecodedInstr* d, int val, int *changedMem) {
  * otherwise put -1 in *changedReg.
  */
 void RegWrite( DecodedInstr* d, int val, int *changedReg) {
-    /* Your code goes here */
+  int function = d->op;
+  /* No reg write case */
+  if(d->type != R && (function == BEQ || function == J || function == JR || function == SW)) {
+    DEBUG_PRINT(printf("DEBUG REGWRITE: NO WRITE\n"), DEBUGGING);
+    *changedReg = -1;
+  }
+  /* R-format */
+  else if(d->type == R) {
+    DEBUG_PRINT(printf("DEBUG REGWRITE: R-FORMAT\n"), DEBUGGING);
+    function = d->regs.r.funct;
+    
+    // Write to register
+    int rd = d->regs.r.rd;
+    mips.registers[rd] = val;
+    *changedReg = rd;
+  }
+  /* LW */
+  else if(function == LW) {
+    DEBUG_PRINT(printf("DEBUG REGWRITE: LW\n"), DEBUGGING);
+    // work in progress
+  }
+  /* I-format (except JAL) */
+  else if(function != JAL && d->type == I) {
+    DEBUG_PRINT(printf("DEBUG REGWRITE: I-FORMAT (NO JAL). val = %d\n", val), DEBUGGING);
+    // Write to register
+    int rt = d->regs.r.rt;
+    mips.registers[rt] = val;
+    *changedReg = rt;
+    DEBUG_PRINT(printf("DEBUG REGWRITE: changedReg = %d\n", *changedReg), DEBUGGING);
+  }
+  /* JAL */
+  else {
+    DEBUG_PRINT(printf("DEBUG REGWRITE: JAL\n"), DEBUGGING);
+    if(function == JAL) {
+      // Write to register
+      mips.registers[RA] = val;
+      *changedReg = RA;
+    }
+  }
 }
