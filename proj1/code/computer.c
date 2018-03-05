@@ -319,7 +319,7 @@ void PrintInstruction ( DecodedInstr* d) {
     
 
     if(d->type == R){
-        	printf("%s $%i, $%i, %i\n" ,Afuct[d->regs.r.funct], d->regs.r.rt, d->regs.r.rs, d->regs.r.rd);
+        	printf("%s $%i, $%i, %i\n" ,Afuct[d->regs.r.funct], d->regs.r.rs, d->regs.r.rt, d->regs.r.rd);
     	}
     if(d->type == I){
     		printf("%s $%i, $%i, %i\n" ,Aop[d->op], d->regs.i.rt, d->regs.i.rs, d->regs.i.addr_or_immed);
