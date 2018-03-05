@@ -31,7 +31,7 @@ const char *Afuct[43];
 void fillin(){
     Aop[33] = "addu";
     Aop[9] = "addiu";
-    Aop[35] = "subu";
+    //Aop[35] = "subu";
     Aop[0] = "sll";
     Aop[2] = "srl";
     Aop[36] = "and";
@@ -63,7 +63,7 @@ void fillin(){
     Afuct[2] = "j";
     Afuct[3] = "jal";
     Afuct[8] = "jr";
-    Afuct[35] = "lw";
+    //Afuct[35] = "lw";
     Afuct[43] = "sw";
  }
 
@@ -326,14 +326,19 @@ void PrintInstruction ( DecodedInstr* d) {
 
 
     if(d->type == R){
-            printf("%s $%i, $%i, %i\n" ,Afuct[d->regs.r.funct], d->regs.r.rs, d->regs.r.rt, d->regs.r.rd);
+            printf("%s $%i, $%i, $%i\n" ,Afuct[d->regs.r.funct], d->regs.r.rd, d->regs.r.rs, d->regs.r.rt);
         }
-    if(d->type == I){
-            printf("%s $%i, $%i, %i\n" ,Aop[d->op], d->regs.i.rs, d->regs.i.rt, d->regs.i.addr_or_immed);
+    if(d->type == I && (Aop[d->op] == "beq" || Aop[d->op] == "bne")){
+            printf("%s $%i, $%i, 0x%8.8x\n" ,Aop[d->op], d->regs.i.rs, d->regs.i.rt, d->regs.i.addr_or_immed*4 + 4 + mips.pc);
     }
-    else if(d->type == I && Aop[d->op] == "beq"){
-            printf("%s $%i, $%i, 0x%8.8x\n" ,Aop[d->op], d->regs.i.rs, d->regs.i.rt, d->regs.i.addr_or_immed);
+
+    else if(d->type == I && (Aop[d->op] == "sw" || Aop[d->op] == "lw")){
+            printf("%s $%i, %i($%i)\n" ,Aop[d->op], d->regs.i.rs, d->regs.i.rt, d->regs.i.addr_or_immed);
     }
+    else if(d->type == I){
+            printf("%s $%i, $%i, %i\n" ,Aop[d->op], d->regs.i.rt, d->regs.i.rs, d->regs.i.addr_or_immed);
+    }
+
     if(d->type == J){
             printf("%s 0x%8.8x\n" ,Aop[d->op], d->regs.j.target);
     }
@@ -361,7 +366,7 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
       val = rs + rt;
     }
     /* SUB instruction */
-    else if(function == SUBU && function == SLT) {
+    else if(function == SUBU || function == SLT) {
       // // DEBUG_PRINT(printf("DEBUG EXECUTE: SUB\n"), DEBUGGING);
       val = rs - rt;
     }
@@ -391,7 +396,8 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
 
     /* ADD instruction */
     if(function == ADDIU || function == LW || function == SW) {
-      val = (function == ADDIU) ? rs + imm : mips.memory[rs] + imm;
+      //val = (function == ADDIU) ? rs + imm : mips.memory[rs] + imm;
+      val = rs + imm;
       // // DEBUG_PRINT(printf("DEBUG EXECUTE: ADD. val = %d\n", val), DEBUGGING);
     }
     /* BRANCH instruction */
@@ -485,16 +491,27 @@ int Mem( DecodedInstr* d, int val, int *changedMem) {
     *changedMem = -1;
     return val;
   }
+  /* value out of range or invalid value */
+  if(!(val >= 0x00401000 && val <= 0x00404000) || val % 4 != 0) {
+    printf("Memory Access Exception at [0x%08x]: address [0x%08x]\n", mips.pc, val);
+    exit(0);
+  }
+
+  int rt = d->regs.i.rt;
+  
   /* SW */
   if(function == SW) {
-    int rt = d->regs.r.rt;
     mips.memory[(val-0x00400000)/4] = mips.registers[rt];
-    return 0;
+    *changedMem = val;
   }
   /* LW */
   else {
-    return mips.memory[(val-0x00400000)/4];
+    mips.registers[rt] = mips.memory[(val-0x00400000)/4];
+    *changedMem = -1;
+    val = mips.registers[rt];
   }
+
+  return val;
 }
 
 /* 
