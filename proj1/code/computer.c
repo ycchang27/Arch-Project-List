@@ -19,27 +19,22 @@ void PrintInstruction (DecodedInstr*);
 Computer mips;
 RegVals rVals;
 int DEBUGGING;
+const int HIGHEST_OPCODE_OR_FUNCT = 43;
 enum JumpOpcode{ JAL = 3 }; // additional enum for instruction decoding
 enum OtherFuncts{ SLL = 0, ADDU = 33, SUBU = 35, AND = 36, OR = 37, SLT = 42};
 enum OtherOpcodes{BEQ = 4, BNE = 5, JR = 8, ADDIU = 9, ANDI = 12, ORI = 13, LUI = 15, LW = 35, SW = 43};
 enum Registers{ RA = 31}; // specific registers
 
-const char *Aop[43];
+
+const char *Aop[44];
     
-const char *Afuct[43];
+const char *Afuct[44];
 
 void fillin(){
-    Aop[33] = "addu";
     Aop[9] = "addiu";
-    //Aop[35] = "subu";
-    Aop[0] = "sll";
-    Aop[2] = "srl";
-    Aop[36] = "and";
     Aop[12] = "andi";
-    Aop[37] = "or";
     Aop[13] = "ori";
     Aop[15] = "lui";
-    Aop[42] = "slt";
     Aop[4] = "beq";
     Aop[5] = "bne";
     Aop[2] = "j";
@@ -48,23 +43,13 @@ void fillin(){
     Aop[43] = "sw";
 
     Afuct[33] = "addu";
-    Afuct[9] = "addiu";
     Afuct[35] = "subu";
     Afuct[0] = "sll";
     Afuct[2] = "srl";
     Afuct[36] = "and";
-    Afuct[12] = "andi";
     Afuct[37] = "or";
-    Afuct[13] = "ori";
-    Afuct[15] = "lui";
     Afuct[42] = "slt";
-    Afuct[4] = "beq";
-    Afuct[5] = "bne";
-    Afuct[2] = "j";
-    Afuct[3] = "jal";
     Afuct[8] = "jr";
-    //Afuct[35] = "lw";
-    Afuct[43] = "sw";
  }
 
 /* Debug Macro */
@@ -254,7 +239,7 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
         d->regs.r.funct = instr & 0x3F;                 // 5-0
 
         /* The instruction does not exist */
-        if(Afuct[d->regs.r.funct] == NULL) {
+        if(d->regs.r.funct > HIGHEST_OPCODE_OR_FUNCT || Afuct[d->regs.r.funct] == NULL) {
           exit(0);
         }
 
@@ -275,7 +260,7 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
     else {
         // // DEBUG_PRINT(printf("DEBUG DECODE: Instruction 0x%8.8x is in I-format\n", instr), DEBUGGING);
         /* The instruction does not exist */
-        if(Aop[opcode] == NULL) {
+        if(opcode > HIGHEST_OPCODE_OR_FUNCT || Aop[opcode] == NULL) {
           exit(0);
         }
 
@@ -402,8 +387,8 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
     int rs = rVals->R_rs, imm = d->regs.i.addr_or_immed;
 
     /* ADD instruction */
-    if(function == ADDIU || function == LW || function == SW) {
-      val = (function == ADDIU) ? rs + imm : mips.memory[rs] + imm;
+    if(function == ADDIU) {
+      val = rs + imm;
       //val = rs + imm;
       // // DEBUG_PRINT(printf("DEBUG EXECUTE: ADD. val = %d\n", val), DEBUGGING);
     }
@@ -499,7 +484,7 @@ int Mem( DecodedInstr* d, int val, int *changedMem) {
     return val;
   }
   /* value out of range or invalid value */
-  if(!(val >= 0x00401000 && val <= 0x00404000) || val % 4 != 0) {
+  if(!(val >= 0x00401000 && val <= 0x00403FFF) || val % 4 != 0) {
     printf("Memory Access Exception at [0x%08x]: address [0x%08x]\n", mips.pc, val);
     exit(0);
   }
@@ -513,9 +498,8 @@ int Mem( DecodedInstr* d, int val, int *changedMem) {
   }
   /* LW */
   else {
-    mips.registers[rt] = mips.memory[(val-0x00400000)/4];
+    val = mips.memory[(val-0x00400000)/4];
     *changedMem = -1;
-    val = mips.registers[rt];
   }
 
   return val;
