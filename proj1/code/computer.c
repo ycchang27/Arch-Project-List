@@ -514,7 +514,7 @@ int Mem( DecodedInstr* d, int val, int *changedMem) {
 void RegWrite( DecodedInstr* d, int val, int *changedReg) {
   int function = d->op;
   /* No reg write case */
-  if(d->regs.r.funct == JR || (d->type != R && (function == BEQ || function == J || function == SW))) {
+  if(d->regs.r.funct == JR || (d->type != R && (function == BEQ || function == BNE || function == J || function == SW))) {
     // // DEBUG_PRINT(printf("DEBUG REGWRITE: NO WRITE\n"), DEBUGGING);
     *changedReg = -1;
   }

@@ -30,13 +30,16 @@
 0x00400048  0x11600001  beq $11,$0,0x00000001 24   beq	$t3, $0, NoExit
 
 # vising here would end the C MIPS Interpreter
+# Exit:
 0x0040004c  0x20080001  addi $8,$0,0x00000001 28   addi	$t0, $0, 1
 
 # more branch test (Shouldn't visit Exit yet)
+# NoExit:
 0x00400050  0x240c0001  addiu $12,$0,0x000000031   addiu	$t4, $0, 1
 0x00400054  0x1564fffd  bne $11,$4,0xfffffffd 32   bne	$t3, $4, Exit
 
-# jump around and jump to Exit
+# jump around and jump to Exit (jal->jr->j->Exit)
 0x00400058  0x0c100018  jal 0x00400060        35   jal	MoreJump
 0x0040005c  0x08100013  j 0x0040004c          36   j	Exit
+# MoreJump:
 0x00400060  0x03e00008  jr $31                39   jr	$ra
