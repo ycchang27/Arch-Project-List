@@ -13,6 +13,21 @@ addiu $8, $0, 2
 New pc = 0040000c
 Updated r08 to 00000002
 No memory location was updated.
-Executing instruction at 0040000c: ae080003
-sw $8, 3($16)
-Memory Access Exception at [0x00400010]: address [0x00401003]
+Executing instruction at 0040000c: ae080000
+sw $8, 0($16)
+New pc = 00400010
+No register was updated.
+Updated memory at address 00401000 to 00000002
+Executing instruction at 00400010: 3c100040
+lui $16, 64
+New pc = 00400014
+Updated r16 to 00400000
+No memory location was updated.
+Executing instruction at 00400014: 36104000
+ori $16, $16, 16384
+New pc = 00400018
+Updated r16 to 00404000
+No memory location was updated.
+Executing instruction at 00400018: 8e090000
+lw $9, 0($16)
+Memory Access Exception at [0x00400018]: address [0x00404000]

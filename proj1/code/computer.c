@@ -485,7 +485,7 @@ int Mem( DecodedInstr* d, int val, int *changedMem) {
   }
   /* value out of range or invalid value */
   if(!(val >= 0x00401000 && val <= 0x00403FFF) || val % 4 != 0) {
-    printf("Memory Access Exception at [0x%08x]: address [0x%08x]\n", mips.pc, val);
+    printf("Memory Access Exception at [0x%08x]: address [0x%08x]\n", (mips.pc-4), val);
     exit(0);
   }
 
