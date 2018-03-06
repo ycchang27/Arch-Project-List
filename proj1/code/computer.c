@@ -295,25 +295,37 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
  *        absolute address, rather than being PC relative
  */
 void PrintInstruction ( DecodedInstr* d) {
-    if(d->type == R){
-            printf("%s $%i, $%i, $%i\n" ,Afuct[d->regs.r.funct], d->regs.r.rd, d->regs.r.rs, d->regs.r.rt);
+
+	if(d->type == R && Afuct[d->regs.r.funct] == "jr"){
+            printf("%s\t$%i\n" ,Afuct[d->regs.r.funct], d->regs.r.rs);
         }
+    else if(d->type == R && (Afuct[d->regs.r.funct] == "sll" || Afuct[d->regs.r.funct] == "srl")){
+            printf("%s\t$%i, $%i, %i\n" ,Afuct[d->regs.r.funct], d->regs.r.rd, d->regs.r.rt, d->regs.r.shamt);
+        }
+
+    else if(d->type == R){
+            printf("%s\t$%i, $%i, $%i\n" ,Afuct[d->regs.r.funct], d->regs.r.rd, d->regs.r.rs, d->regs.r.rt);
+        }
+        
     if(d->type == I && (Aop[d->op] == "beq" || Aop[d->op] == "bne")){
-            printf("%s $%i, $%i, 0x%8.8x\n" ,Aop[d->op], d->regs.i.rs, d->regs.i.rt, d->regs.i.addr_or_immed*4 + 4 + mips.pc);
+            printf("%s\t$%i, $%i, 0x%8.8x\n" ,Aop[d->op], d->regs.i.rs, d->regs.i.rt, d->regs.i.addr_or_immed*4 + 4 + mips.pc);
     }
 
     else if(d->type == I && (Aop[d->op] == "sw" || Aop[d->op] == "lw")){
-            printf("%s $%i, %i($%i)\n" ,Aop[d->op], d->regs.i.rt, d->regs.i.addr_or_immed, d->regs.i.rs);
+            printf("%s\t$%i, %i($%i)\n" ,Aop[d->op], d->regs.i.rt, d->regs.i.addr_or_immed, d->regs.i.rs);
     }
     else if(d->type == I && Aop[d->op] == "lui"){
-            printf("%s $%i, %i\n" ,Aop[d->op], d->regs.i.rt, d->regs.i.addr_or_immed);
+            printf("%s\t$%i, 0x%8.8x\n" ,Aop[d->op], d->regs.i.rt, d->regs.i.addr_or_immed);
+    }
+    else if(d->type == I && (Aop[d->op] == "andi" || Aop[d->op] == "ori")){
+            printf("%s\t$%i, $%i, 0x%8.8x\n" ,Aop[d->op], d->regs.i.rt, d->regs.i.rs, d->regs.i.addr_or_immed);
     }
     else if(d->type == I){
-            printf("%s $%i, $%i, %i\n" ,Aop[d->op], d->regs.i.rt, d->regs.i.rs, d->regs.i.addr_or_immed);
+            printf("%s\t$%i, $%i, %i\n" ,Aop[d->op], d->regs.i.rt, d->regs.i.rs, d->regs.i.addr_or_immed);
     }
 
-    if(d->type == J){
-            printf("%s 0x%8.8x\n" ,Aop[d->op], d->regs.j.target);
+    if(d->type == J ){
+            printf("%s\t0x%8.8x\n" ,Aop[d->op], d->regs.j.target);
     }
 }
 
