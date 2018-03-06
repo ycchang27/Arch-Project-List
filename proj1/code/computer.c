@@ -20,7 +20,7 @@ Computer mips;
 RegVals rVals;
 const int HIGHEST_OPCODE_OR_FUNCT = 43;
 enum JumpOpcode{ JAL = 3 }; // additional enum for instruction decoding
-enum OtherFuncts{ SLL = 0, ADDU = 33, SUBU = 35, AND = 36, OR = 37, SLT = 42};
+enum OtherFuncts{ SLL = 0, SRL = 2, ADDU = 33, SUBU = 35, AND = 36, OR = 37, SLT = 42};
 enum OtherOpcodes{BEQ = 4, BNE = 5, JR = 8, ADDIU = 9, ANDI = 12, ORI = 13, LUI = 15, LW = 35, SW = 43};
 enum Registers{ RA = 31}; // specific registers
 
@@ -124,7 +124,7 @@ void Simulate () {
         /* Fetch instr at mips.pc, returning it in instr */
         instr = Fetch (mips.pc);
 
-        printf ("Executing instruction at %8.8x: %8.8x\n", mips.pc, instr);
+        printf ("Executing instruction at 0x%8.8x: 0x%8.8x\n", mips.pc, instr);
 
         /* 
     	   * Decode instr, putting decoded instr in d
@@ -175,15 +175,15 @@ void Simulate () {
  */
 void PrintInfo ( int changedReg, int changedMem) {
     int k, addr;
-    printf ("New pc = %8.8x\n", mips.pc);
+    printf ("New pc = 0x%8.8x\n", mips.pc);
     if (!mips.printingRegisters && changedReg == -1) {
         printf ("No register was updated.\n");
     } else if (!mips.printingRegisters) {
-        printf ("Updated r%2.2d to %8.8x\n",
+        printf ("Updated r%2.2d to 0x%8.8x\n",
         changedReg, mips.registers[changedReg]);
     } else {
         for (k=0; k<32; k++) {
-            printf ("r%2.2d: %8.8x  ", k, mips.registers[k]);
+            printf ("r%2.2d: 0x%8.8x  ", k, mips.registers[k]);
             if ((k+1)%4 == 0) {
                 printf ("\n");
             }
@@ -192,7 +192,7 @@ void PrintInfo ( int changedReg, int changedMem) {
     if (!mips.printingMemory && changedMem == -1) {
         printf ("No memory location was updated.\n");
     } else if (!mips.printingMemory) {
-        printf ("Updated memory at address %8.8x to %8.8x\n",
+        printf ("Updated memory at address 0x%8.8x to 0x%8.8x\n",
         changedMem, Fetch (changedMem));
     } else {
         printf ("Nonzero memory\n");
@@ -201,7 +201,7 @@ void PrintInfo ( int changedReg, int changedMem) {
              addr < 0x00400000+4*(MAXNUMINSTRS+MAXNUMDATA);
              addr = addr+4) {
             if (Fetch (addr) != 0) {
-                printf ("%8.8x  %8.8x\n", addr, Fetch (addr));
+                printf ("0x%8.8x  0x%8.8x\n", addr, Fetch (addr));
             }
         }
     }
@@ -295,38 +295,46 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
  *        absolute address, rather than being PC relative
  */
 void PrintInstruction ( DecodedInstr* d) {
-
-	if(d->type == R && Afuct[d->regs.r.funct] == "jr"){
-            printf("%s\t$%i\n" ,Afuct[d->regs.r.funct], d->regs.r.rs);
-        }
-    else if(d->type == R && (Afuct[d->regs.r.funct] == "sll" || Afuct[d->regs.r.funct] == "srl")){
-            printf("%s\t$%i, $%i, %i\n" ,Afuct[d->regs.r.funct], d->regs.r.rd, d->regs.r.rt, d->regs.r.shamt);
-        }
-
-    else if(d->type == R){
-            printf("%s\t$%i, $%i, $%i\n" ,Afuct[d->regs.r.funct], d->regs.r.rd, d->regs.r.rs, d->regs.r.rt);
-        }
-        
-    if(d->type == I && (Aop[d->op] == "beq" || Aop[d->op] == "bne")){
-            printf("%s\t$%i, $%i, 0x%8.8x\n" ,Aop[d->op], d->regs.i.rs, d->regs.i.rt, d->regs.i.addr_or_immed*4 + 4 + mips.pc);
-    }
-
-    else if(d->type == I && (Aop[d->op] == "sw" || Aop[d->op] == "lw")){
-            printf("%s\t$%i, %i($%i)\n" ,Aop[d->op], d->regs.i.rt, d->regs.i.addr_or_immed, d->regs.i.rs);
-    }
-    else if(d->type == I && Aop[d->op] == "lui"){
-            printf("%s\t$%i, 0x%8.8x\n" ,Aop[d->op], d->regs.i.rt, d->regs.i.addr_or_immed);
-    }
-    else if(d->type == I && (Aop[d->op] == "andi" || Aop[d->op] == "ori")){
-            printf("%s\t$%i, $%i, 0x%8.8x\n" ,Aop[d->op], d->regs.i.rt, d->regs.i.rs, d->regs.i.addr_or_immed);
-    }
-    else if(d->type == I){
-            printf("%s\t$%i, $%i, %i\n" ,Aop[d->op], d->regs.i.rt, d->regs.i.rs, d->regs.i.addr_or_immed);
-    }
-
-    if(d->type == J ){
-            printf("%s\t0x%8.8x\n" ,Aop[d->op], d->regs.j.target);
-    }
+  /* JR */
+	if(d->type == R && d->regs.r.funct == JR) {
+    printf("%s\t$%i\n", Afuct[d->regs.r.funct], d->regs.r.rs);
+  }
+  /* shift instructions */
+  else if(d->type == R && (d->regs.r.funct == SLL || d->regs.r.funct == SRL)) {
+    printf("%s\t$%i, $%i, %i\n", Afuct[d->regs.r.funct], d->regs.r.rd, d->regs.r.rt, d->regs.r.shamt);
+  }
+  /* other R-format instructions */
+  else if(d->type == R) {
+    printf("%s\t$%i, $%i, $%i\n", Afuct[d->regs.r.funct], d->regs.r.rd, d->regs.r.rs, d->regs.r.rt);
+  }
+  /* branch instructions */
+  else if(d->type == I && (d->op == BEQ || d->op == BNE)) {
+    printf("%s\t$%i, $%i, 0x%8.8x\n", Aop[d->op], d->regs.i.rs, d->regs.i.rt, d->regs.i.addr_or_immed*4 + 4 + mips.pc);
+  }
+  /* SW/LW */
+  else if(d->type == I && (d->op == SW || d->op == LW)) {
+    printf("%s\t$%i, %i($%i)\n", Aop[d->op], d->regs.i.rt, d->regs.i.addr_or_immed, d->regs.i.rs);
+  }
+  /* LUI */
+  else if(d->type == I && d->op == LUI) {
+    printf("%s\t$%i, 0x%8.8x\n", Aop[d->op], d->regs.i.rt, d->regs.i.addr_or_immed);
+  }
+  /* ORI/ANDI */
+  else if(d->type == I && (d->op == ANDI || d->op == ORI)) {
+    printf("%s\t$%i, $%i, 0x%8.8x\n", Aop[d->op], d->regs.i.rt, d->regs.i.rs, d->regs.i.addr_or_immed);
+  }
+  /* other I-format instructions */
+  else if(d->type == I) {
+    printf("%s\t$%i, $%i, %i\n", Aop[d->op], d->regs.i.rt, d->regs.i.rs, d->regs.i.addr_or_immed);
+  }
+  /* jump instructions */
+  else if(d->type == J) {
+    printf("%s\t0x%8.8x\n", Aop[d->op], d->regs.j.target);
+  }
+  /* invalid instruction */
+  else {
+    exit(0);
+  }
 }
 
 /* Perform computation needed to execute d, returning computed value */

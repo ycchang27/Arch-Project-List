@@ -1,121 +1,33 @@
-Executing instruction at 00400000: 3c101234
-lui $16, 4660
-New pc = 00400004
-Updated r16 to 12340000
+Executing instruction at 00400000: 3c100040
+lui	$16, 0x00000040
+New pc = 0x00400004
+Updated r16 to 0x00400000
 No memory location was updated.
-Executing instruction at 00400004: 36105670
-ori $16, $16, 22128
-New pc = 00400008
-Updated r16 to 12345670
+Executing instruction at 00400004: 36101000
+ori	$16, $16, 0x00001000
+New pc = 0x00400008
+Updated r16 to 0x00401000
 No memory location was updated.
-Executing instruction at 00400008: 24080070
-addiu $8, $0, 112
-New pc = 0040000c
-Updated r08 to 00000070
+Executing instruction at 00400008: 24080002
+addiu	$8, $0, 2
+New pc = 0x0040000c
+Updated r08 to 0x00000002
 No memory location was updated.
-Executing instruction at 0040000c: 02088023
-subu $16, $16, $8
-New pc = 00400010
-Updated r16 to 12345600
-No memory location was updated.
-Executing instruction at 00400010: 2610aa00
-addiu $16, $16, -22016
-New pc = 00400014
-Updated r16 to 12340000
-No memory location was updated.
-Executing instruction at 00400014: 24090001
-addiu $9, $0, 1
-New pc = 00400018
-Updated r09 to 00000001
-No memory location was updated.
-Executing instruction at 00400018: 00094900
-sll $9, $0, $9
-New pc = 0040001c
-Updated r09 to 00000010
-No memory location was updated.
-Executing instruction at 0040001c: 00094842
-srl $9, $0, $9
-New pc = 00400020
-Updated r09 to 00000008
-No memory location was updated.
-Executing instruction at 00400020: 02098021
-addu $16, $16, $9
-New pc = 00400024
-Updated r16 to 12340008
-No memory location was updated.
-Executing instruction at 00400024: 24095670
-addiu $9, $0, 22128
-New pc = 00400028
-Updated r09 to 00005670
-No memory location was updated.
-Executing instruction at 00400028: 02098025
-or $16, $16, $9
-New pc = 0040002c
-Updated r16 to 12345678
-No memory location was updated.
-Executing instruction at 0040002c: 240a5678
-addiu $10, $0, 22136
-New pc = 00400030
-Updated r10 to 00005678
-No memory location was updated.
-Executing instruction at 00400030: 020a8024
-and $16, $16, $10
-New pc = 00400034
-Updated r16 to 00005678
-No memory location was updated.
-Executing instruction at 00400034: 3c011234
-lui $1, 4660
-New pc = 00400038
-Updated r01 to 12340000
-No memory location was updated.
-Executing instruction at 00400038: 34210000
-ori $1, $1, 0
-New pc = 0040003c
-Updated r01 to 12340000
-No memory location was updated.
-Executing instruction at 0040003c: 02018024
-and $16, $16, $1
-New pc = 00400040
-Updated r16 to 00000000
-No memory location was updated.
-Executing instruction at 00400040: 240a0001
-addiu $10, $0, 1
-New pc = 00400044
-Updated r10 to 00000001
-No memory location was updated.
-Executing instruction at 00400044: 0150582a
-slt $11, $10, $16
-New pc = 00400048
-Updated r11 to 00000000
-No memory location was updated.
-Executing instruction at 00400048: 11600001
-beq $11, $0, 0x00400050
-New pc = 00400050
+Executing instruction at 0040000c: ae080000
+sw	$8, 0($16)
+New pc = 0x00400010
 No register was updated.
+Updated memory at address 0x00401000 to 0x00000002
+Executing instruction at 00400010: 3c100040
+lui	$16, 0x00000040
+New pc = 0x00400014
+Updated r16 to 0x00400000
 No memory location was updated.
-Executing instruction at 00400050: 240c0001
-addiu $12, $0, 1
-New pc = 00400054
-Updated r12 to 00000001
+Executing instruction at 00400014: 36104000
+ori	$16, $16, 0x00004000
+New pc = 0x00400018
+Updated r16 to 0x00404000
 No memory location was updated.
-Executing instruction at 00400054: 1564fffd
-bne $11, $4, 0x0040004c
-New pc = 00400058
-No register was updated.
-No memory location was updated.
-Executing instruction at 00400058: 0c100018
-jal 0x00400060
-New pc = 00400060
-Updated r31 to 0040005c
-No memory location was updated.
-Executing instruction at 00400060: 03e00008
-jr $0, $31, $0
-New pc = 0040005c
-No register was updated.
-No memory location was updated.
-Executing instruction at 0040005c: 08100013
-j 0x0040004c
-New pc = 0040004c
-No register was updated.
-No memory location was updated.
-Executing instruction at 0040004c: 20080001
+Executing instruction at 00400018: 8e090000
+lw	$9, 0($16)
+Memory Access Exception at [0x00400018]: address [0x00404000]
