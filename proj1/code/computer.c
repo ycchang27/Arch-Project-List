@@ -53,7 +53,14 @@ void fillin(){
     Afuct[37] = "or";
     Afuct[42] = "slt";
     Afuct[8] = "jr";
- }
+}
+
+/*
+ * Return true if opcode requires sign extend
+ */
+int signExtend(int opcode) {
+  return !(opcode == LUI || opcode == ANDI || opcode == ORI);
+}
 
 /*
  *  Return an initialized computer with the stack pointer set to the
@@ -124,7 +131,7 @@ void Simulate () {
         /* Fetch instr at mips.pc, returning it in instr */
         instr = Fetch (mips.pc);
 
-        printf ("Executing instruction at 0x%8.8x: 0x%8.8x\n", mips.pc, instr);
+        printf ("Executing instruction at %8.8x: %8.8x\n", mips.pc, instr);
 
         /* 
     	   * Decode instr, putting decoded instr in d
@@ -175,15 +182,15 @@ void Simulate () {
  */
 void PrintInfo ( int changedReg, int changedMem) {
     int k, addr;
-    printf ("New pc = 0x%8.8x\n", mips.pc);
+    printf ("New pc = %8.8x\n", mips.pc);
     if (!mips.printingRegisters && changedReg == -1) {
         printf ("No register was updated.\n");
     } else if (!mips.printingRegisters) {
-        printf ("Updated r%2.2d to 0x%8.8x\n",
+        printf ("Updated r%2.2d to %8.8x\n",
         changedReg, mips.registers[changedReg]);
     } else {
         for (k=0; k<32; k++) {
-            printf ("r%2.2d: 0x%8.8x  ", k, mips.registers[k]);
+            printf ("r%2.2d: %8.8x  ", k, mips.registers[k]);
             if ((k+1)%4 == 0) {
                 printf ("\n");
             }
@@ -192,7 +199,7 @@ void PrintInfo ( int changedReg, int changedMem) {
     if (!mips.printingMemory && changedMem == -1) {
         printf ("No memory location was updated.\n");
     } else if (!mips.printingMemory) {
-        printf ("Updated memory at address 0x%8.8x to 0x%8.8x\n",
+        printf ("Updated memory at address %8.8x to %8.8x\n",
         changedMem, Fetch (changedMem));
     } else {
         printf ("Nonzero memory\n");
@@ -201,7 +208,7 @@ void PrintInfo ( int changedReg, int changedMem) {
              addr < 0x00400000+4*(MAXNUMINSTRS+MAXNUMDATA);
              addr = addr+4) {
             if (Fetch (addr) != 0) {
-                printf ("0x%8.8x  0x%8.8x\n", addr, Fetch (addr));
+                printf ("%8.8x  %8.8x\n", addr, Fetch (addr));
             }
         }
     }
@@ -255,14 +262,20 @@ void Decode ( unsigned int instr, DecodedInstr* d, RegVals* rVals) {
         if(opcode > HIGHEST_OPCODE_OR_FUNCT || Aop[opcode] == NULL) {
           exit(0);
         }
-
         /* set up DecodedInstr's variables */ 
         d->type = I;
         d->regs.i.rs = (instr & 0x3E00000) >> 21;       // 25-21
         d->regs.i.rt = (instr & 0x1F0000) >> 16;        // 20-16
 
-        // sign extend immediate (15-0)
-        d->regs.i.addr_or_immed = ((int32_t)(int16_t)(instr & 0xFFFF));
+        // determine extend type
+        if(signExtend(opcode)) {
+          // sign extend immediate (15-0)
+          d->regs.i.addr_or_immed = ((int32_t)(int16_t)(instr & 0xFFFF));
+        }
+        else {
+          // zero extend immediate (15-0)
+          d->regs.i.addr_or_immed = ((uint32_t)(uint16_t)(instr & 0xFFFF));
+        }
 
         /* set up Register values */
         rVals->R_rs = mips.registers[d->regs.r.rs];
@@ -317,7 +330,7 @@ void PrintInstruction ( DecodedInstr* d) {
   }
   /* LUI */
   else if(d->type == I && d->op == LUI) {
-    printf("%s\t$%i, 0x%8.8x\n", Aop[d->op], d->regs.i.rt, d->regs.i.addr_or_immed);
+    printf("%s\t$%i, 0x%08x\n", Aop[d->op], d->regs.i.rt, (d->regs.i.addr_or_immed & 0xFFFF));
   }
   /* ORI/ANDI */
   else if(d->type == I && (d->op == ANDI || d->op == ORI)) {
@@ -349,7 +362,7 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
     /* SHIFT instruction */
     if(d->regs.r.shamt != 0) {
       int shamt = d->regs.r.shamt;
-      val = (function == SLL) ? rt << shamt : rt >> shamt;
+      val = (function == SLL) ? (uint32_t)(rt) << shamt : (uint32_t)(rt) >> shamt;
     }
     /* ADD instruction */
     else if(function == ADDU) {
@@ -412,7 +425,8 @@ int Execute ( DecodedInstr* d, RegVals* rVals) {
     return val;
   }
   /* J-format */
-  // // DEBUG_PRINT(printf("DEBUG EXECUTE: J-FORMAT\n"), DEBUGGING);
+  // do nothing
+
   return val;
 }
 

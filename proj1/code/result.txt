@@ -1,33 +1,23 @@
-Executing instruction at 00400000: 3c100040
-lui	$16, 0x00000040
-New pc = 0x00400004
-Updated r16 to 0x00400000
+Executing instruction at 00400000: 24040003
+addiu	$4, $0, 3
+New pc = 00400004
+Updated r04 to 00000003
 No memory location was updated.
-Executing instruction at 00400004: 36101000
-ori	$16, $16, 0x00001000
-New pc = 0x00400008
-Updated r16 to 0x00401000
+Executing instruction at 00400004: 24050002
+addiu	$5, $0, 2
+New pc = 00400008
+Updated r05 to 00000002
 No memory location was updated.
-Executing instruction at 00400008: 24080002
-addiu	$8, $0, 2
-New pc = 0x0040000c
-Updated r08 to 0x00000002
+Executing instruction at 00400008: 3c0a8fff
+lui	$10, 0x00008fff
+New pc = 0040000c
+Updated r10 to 8fff0000
 No memory location was updated.
-Executing instruction at 0040000c: ae080000
-sw	$8, 0($16)
-New pc = 0x00400010
-No register was updated.
-Updated memory at address 0x00401000 to 0x00000002
-Executing instruction at 00400010: 3c100040
-lui	$16, 0x00000040
-New pc = 0x00400014
-Updated r16 to 0x00400000
+Executing instruction at 0040000c: 000a5782
+srl	$10, $10, 30
+New pc = 00400010
+Updated r10 to 00000002
 No memory location was updated.
-Executing instruction at 00400014: 36104000
-ori	$16, $16, 0x00004000
-New pc = 0x00400018
-Updated r16 to 0x00404000
-No memory location was updated.
-Executing instruction at 00400018: 8e090000
-lw	$9, 0($16)
-Memory Access Exception at [0x00400018]: address [0x00404000]
+Executing instruction at 00400010: 8d440003
+lw	$4, 3($10)
+Memory Access Exception at [0x00400010]: address [0x00000005]
