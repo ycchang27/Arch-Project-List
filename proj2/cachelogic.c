@@ -67,6 +67,41 @@ void init_lru(int assoc_index, int block_index)
 }
 
 /*
+  This function handles random replacement policy. 
+*/
+void handleRandom() {
+  // code here
+}
+
+/*
+  This function handles LRU (least recently used) replacement policy.
+*/
+void handleLRU() {
+  // code here
+}
+
+/*
+  This function handles LFU (least frequently used) replacement policy.
+*/
+void handleLFU() {
+  // code here
+}
+
+/*
+  This function handles write back memory sync policy.
+*/
+void handleWriteBack() {
+  // code here
+}
+
+/*
+  This function handles write back memory sync policy.
+*/
+void handleWriteThrough() {
+  // code here
+}
+
+/*
   This is the primary function you are filling out,
   You are free to add helper functions if you need them
 
@@ -115,9 +150,38 @@ void accessMemory(address addr, word* data, WriteEnable we)
   functions can be found in tips.h
   */
 
-  /* Start adding code here */
-
-
+  /* Write Mode */
+  if(we == WRITE /*remove this when complete->*/ && false /*<-remove this when complete*/) {
+    switch(policy) {
+      case RANDOM: 
+        handleRandom();
+        break;
+      case LRU: 
+        handleLRU();
+        break;
+      case LFU: handleLFU();
+        break;
+      default: 
+        printf("Invalid replacement policy in accessMemory function!\n");
+        exit(0);
+    }
+    /* Memory sync policy setting */
+    switch(memory_sync_policy) {
+      case WRITE_BACK: 
+        handleWriteBack();
+        break;
+      case WRITE_THROUGH: 
+        handleWriteThrough();
+        break;
+      default:
+        printf("Invalid memory sync policy in accessMemory function!\n");
+        exit(0);
+    }
+  }
+  /* Read Mode */
+  else if(we == READ /*remove this when complete->*/ && false /*<-remove this when complete*/) {
+    // code here
+  }
   /* This call to accessDRAM occurs when you modify any of the
      cache parameters. It is provided as a stop gap solution.
      At some point, ONCE YOU HAVE MORE OF YOUR CACHELOGIC IN PLACE,
