@@ -78,6 +78,9 @@ void handleRandom() {
 */
 void handleLRU() {
   // code here
+
+
+
 }
 
 /*
@@ -101,6 +104,39 @@ void handleWriteThrough() {
   // code here
 }
 
+void switchMode(){
+  TranferUnit block_mode;
+  switch(block_size)
+  {
+  	case 1:
+  		block_mode = BYTE_SIZE;
+  		break;
+  	case 2:
+  		block_mode = HALF_WORD_SIZE;
+  		break;
+  	case 4:
+  		block_mode = WORD_SIZE;
+  		break;
+  	case 8:
+   		block_mode = DOUBLEWORD_SIZE;
+    	break;
+  	case 16:
+   		block_mode = QUADWORD_SIZE;
+    	break;
+  	case 32:
+    	block_mode = OCTWORD_SIZE;
+    	break;
+    default:
+   		append_log("Invalid transfer block_size for accessMemory\n");
+  }
+	mode = block_mode;
+
+}
+
+
+
+
+
 /*
   This is the primary function you are filling out,
   You are free to add helper functions if you need them
@@ -113,9 +149,42 @@ void handleWriteThrough() {
               if we == WRITE, then data used to
               update Cache/DRAM
 */
+
 void accessMemory(address addr, word* data, WriteEnable we)
 {
   /* Declare variables here */
+
+
+    
+  unsigned int vaddr = addr >> 12;
+  unsigned int set_number = vaddr % set_count;
+  unsigned int block_number = vaddr % assoc;
+  unsigned int transfer_size;
+
+  /* Determine number of bytes involved in memory access */
+  switch(mode)
+  {
+  case BYTE_SIZE:
+    transfer_size = 1;
+    break;
+  case HALF_WORD_SIZE:
+    transfer_size = 2;
+    break;
+  case WORD_SIZE:
+    transfer_size = 4;
+    break;
+  case DOUBLEWORD_SIZE:
+    transfer_size = 8;
+    break;
+  case QUADWORD_SIZE:
+    transfer_size = 16;
+    break;
+  case OCTWORD_SIZE:
+    transfer_size = 32;
+    break;
+  default:
+    append_log("Invalid transfer mode for accessMemory\n");
+  }
 
   /* handle the case of no cache at all - leave this in */
   if(assoc == 0) {
@@ -123,65 +192,100 @@ void accessMemory(address addr, word* data, WriteEnable we)
     return;
   }
 
-  /*
-  You need to read/write between memory (via the accessDRAM() function) and
-  the cache (via the cache[] global structure defined in tips.h)
 
-  Remember to read tips.h for all the global variables that tell you the
-  cache parameters
+  /* Determine whether this function reads or writes */
+  switch(we)
+  {
+  	case READ:
+  		if(cache[set_number].block[block_number] != NULL)	
+  		{
+  			//Transfer block data to data
+  			memcpy(data,cache[set_number].block[block_number].data,transfer_size);	
+  		}
+  		else
+  		{
+    		TransferUnit temp = mode;
+    		switchMode();
+    		accessDRAM(addr,data,we);
+    		mode = temp;
 
-  The same code should handle random, LFU, and LRU policies. Test the policy
-  variable (see tips.h) to decide which policy to execute. The LRU policy
-  should be written such that no two blocks (when their valid bit is VALID)
-  will ever be a candidate for replacement. In the case of a tie in the
-  least number of accesses for LFU, you use the LRU information to determine
-  which block to replace.
+  		}
+  		break;
+  	case WRITE:
+  		if(cache[set_number].block[block_number] == NULL)
+  		{
+  			memcpy(cache[set_number].block[block_number].data,data,transfer_size);
+  			if(memory_sync_policy == WRITE_THROUGH)
+  			{
+  				TransferUnit temp = mode;
+    			switchMode();
+    			accessDRAM(addr,data,we);
+    			mode = temp;
+				}
+				else
+				{
+					cache[set_number].block[block_number].dirty = DIRTY;
+  		  }
+  		}
+  		else
+  		{
+  			if(cache[set_number].block[block_number] != NULL)
+  			{
+  				int i;
+  				for(i = block_number+1;i < assoc;i++)
+  				{
+  					if(cache[set_number].block[i] == NULL)
+  					{
+  						break;
+  					}
+  				}
+  				if(i != assoc)
+  				{
+  					memcpy(cache[set_number].block[i].data,data,transfer_size);
+  					if(memory_sync_policy == WRITE_THROUGH)
+  					{
+  						TransferUnit temp = mode;
+    					switchMode();
+    					accessDRAM(addr,data,we);
+    					mode = temp;
+						}
+						else
+						{
+							cache[set_number].block[i].dirty = DIRTY;
+  		  		}
+  				}
+  				else
+  				{
+  					cacheBlock tempBlock;
+  					switch(policy)
+  					{
+  						case LRU:
+  							tempBlock = handleLRU();
+  							break;
+  						case LFU:
+  							tempBlock = handleLFU();
+  							break;
+  						case RANDOM:
+  							tempBlock = handleRandom();
+  							break;
+  						default:
+  							append_log("Invalid flag for accessMemory\n");
+  					}
+  					if(memory_sync_policy == WRITE_BACK && tempBlock.dirty == DIRTY)
+						{
+							TransferUnit temp = mode;
+    					switchMode();
+    					accessDRAM(addr,tempBlock,we);
+    					mode = temp;  					}
+  				}
+  			}
+  		}
+  		break;
+  	default:
+  		append_log("Invalid flag for accessMemory\n");
 
-  Your cache should be able to support write-through mode (any writes to
-  the cache get immediately copied to main memory also) and write-back mode
-  (and writes to the cache only gets copied to main memory when the block
-  is kicked out of the cache.
-
-  Also, cache should do allocate-on-write. This means, a write operation
-  will bring in an entire block if the block is not already in the cache.
-
-  To properly work with the GUI, the code needs to tell the GUI code
-  when to redraw and when to flash things. Descriptions of the animation
-  functions can be found in tips.h
-  */
-
-  /* Write Mode */
-  if(we == WRITE /*remove this when complete->*/ && false /*<-remove this when complete*/) {
-    switch(policy) {
-      case RANDOM: 
-        handleRandom();
-        break;
-      case LRU: 
-        handleLRU();
-        break;
-      case LFU: handleLFU();
-        break;
-      default: 
-        printf("Invalid replacement policy in accessMemory function!\n");
-        exit(0);
-    }
-    /* Memory sync policy setting */
-    switch(memory_sync_policy) {
-      case WRITE_BACK: 
-        handleWriteBack();
-        break;
-      case WRITE_THROUGH: 
-        handleWriteThrough();
-        break;
-      default:
-        printf("Invalid memory sync policy in accessMemory function!\n");
-        exit(0);
-    }
   }
-  /* Read Mode */
-  else if(we == READ /*remove this when complete->*/ && false /*<-remove this when complete*/) {
-    // code here
-  }
+
   /* This call to accessDRAM occurs when you modify any of the
      cache parameters. It is provided as a stop gap solution.
      At some point, ONCE YOU HAVE MORE OF YOUR CACHELOGIC IN PLACE,
