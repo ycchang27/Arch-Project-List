@@ -67,42 +67,63 @@ void init_lru(int assoc_index, int block_index)
 }
 
 /*
-  This function handles random replacement policy. 
+  This function handles random replacement policy. Returns a random block index.
 */
-void handleRandom() {
-  // code here
+int handleRandom() {
+	return randomint(assoc);
 }
 
 /*
-  This function handles LRU (least recently used) replacement policy.
+  This function handles LRU (least recently used) replacement policy. Returns a block index that has the highest LRU value.
 */
-void handleLRU() {
-  // code here
-
-
-
+int handleLRU(unsigned index) {
+  int highest = 0;
+  for(int i = 1;i < assoc;i++)
+  {
+  	if(cache[index].block[i].lru.value > cache[index].block[highest].lru.value)
+  		lowest = i;
+  }
+  return lowest;
 }
 
 /*
-  This function handles LFU (least frequently used) replacement policy.
+  This function handles LFU (least frequently used) replacement policy. Returns a block index that has the lowest access count.
 */
-void handleLFU() {
-  // code here
+int handleLFU(unsigned index) {
+	int lowest = 0;
+	for(int i = 1 ; i < assoc;i++)
+	{
+		if(cache[index].block[i].lru.value < cache[index].block[lowest].lru.value)
+			lowest = i;
+	}
+	return lowest;
+}
+
+
+/*Increments all blocks in LRU.value by one, except the one in use*/
+void updateLRU(unsigned index,unsigned block){
+	for(int i = 0;i<assoc;i++)
+	{
+		if(block != i)
+			cache[index].block[i].lru.value = (cache[index].block[i].lru.value + 1);
+	}
+}
+
+/*Searches for block index that contains the same tag as the one given.*/
+int searchTag(unsigned inedex,unsigned tag) {
+	for(int i = 0;i<assoc,i++)
+	{
+		if(cache[index].block[block].tag == tag)
+		{
+			return i;
+		}
+	}
+	return -1;
 }
 
 /*
   This function handles write back memory sync policy.
 */
-void handleWriteBack() {
-  // code here
-}
-
-/*
-  This function handles write back memory sync policy.
-*/
-void handleWriteThrough() {
-  // code here
-}
 
 void switchMode(){
   TranferUnit block_mode;
@@ -153,38 +174,19 @@ void switchMode(){
 void accessMemory(address addr, word* data, WriteEnable we)
 {
   /* Declare variables here */
+	static unsigned offset_bits = uint_log2(block_size);
+	static unsigned index_bits = uint_log2(set_count);
+	static unsigned tag_bits = 32 - offset_bits - index_bits;
 
+	/*bit mask except this everytinh will be zero*/
+	static unsigned offset = addr&((1<<offset_bits)-1);
+	/*shifts to the right to ignore offset, masks bits*/
+	static unsigned index = (addr >> offset_bits) & ((1<<index_bits)-1);
+	static unsigned tag = addr >> (offset_bits + index_bits) & ((1 << tag_bits)-1)
+ 	static unsigned addr_no_offset = addrs&~offset;
 
-    
-  unsigned int vaddr = addr >> 12;
-  unsigned int set_number = vaddr % set_count;
-  unsigned int block_number = vaddr % assoc;
-  unsigned int transfer_size;
-
-  /* Determine number of bytes involved in memory access */
-  switch(mode)
-  {
-  case BYTE_SIZE:
-    transfer_size = 1;
-    break;
-  case HALF_WORD_SIZE:
-    transfer_size = 2;
-    break;
-  case WORD_SIZE:
-    transfer_size = 4;
-    break;
-  case DOUBLEWORD_SIZE:
-    transfer_size = 8;
-    break;
-  case QUADWORD_SIZE:
-    transfer_size = 16;
-    break;
-  case OCTWORD_SIZE:
-    transfer_size = 32;
-    break;
-  default:
-    append_log("Invalid transfer mode for accessMemory\n");
-  }
+ 	/*Transfer out 4 bytes or one word*/
+  unsigned int transfer_size = 4;
 
   /* handle the case of no cache at all - leave this in */
   if(assoc == 0) {
@@ -194,102 +196,76 @@ void accessMemory(address addr, word* data, WriteEnable we)
 
 
   /* Determine whether this function reads or writes */
-  switch(we)
-  {
-  	case READ:
-  		if(cache[set_number].block[block_number] != NULL)	
-  		{
-  			//Transfer block data to data
-  			memcpy(data,cache[set_number].block[block_number].data,transfer_size);	
-  		}
-  		else
-  		{
-    		TransferUnit temp = mode;
-    		switchMode();
-    		accessDRAM(addr,data,we);
-    		mode = temp;
+  int block = searchTag(index,tag);
+  int hit = 0;
 
-  		}
-  		break;
-  	case WRITE:
-  		if(cache[set_number].block[block_number] == NULL)
+
+
+  /*If search fails (Cache miss?)*/
+  if (block == -1 || cache[index].block[block].valid == INVALID)
+  {
+  	if(block == -1)
+  	{
+  		switch(policy) 
   		{
-  			memcpy(cache[set_number].block[block_number].data,data,transfer_size);
-  			if(memory_sync_policy == WRITE_THROUGH)
-  			{
-  				TransferUnit temp = mode;
-    			switchMode();
-    			accessDRAM(addr,data,we);
-    			mode = temp;
-				}
-				else
-				{
-					cache[set_number].block[block_number].dirty = DIRTY;
-  		  }
+  			case LRU:
+  				block = handleLRU(index);
+  				break;
+  			case LFU:
+  				block = handleLFU(index);
+  				break;
+  			case RANDOM:
+  				block = handleRandom();
+  				break;
+  			default:
+  				printf("Invalid Replacement Policy\n");
   		}
-  		else
-  		{
-  			if(cache[set_number].block[block_number] != NULL)
-  			{
-  				int i;
-  				for(i = block_number+1;i < assoc;i++)
-  				{
-  					if(cache[set_number].block[i] == NULL)
-  					{
-  						break;
-  					}
-  				}
-  				if(i != assoc)
-  				{
-  					memcpy(cache[set_number].block[i].data,data,transfer_size);
-  					if(memory_sync_policy == WRITE_THROUGH)
-  					{
-  						TransferUnit temp = mode;
-    					switchMode();
-    					accessDRAM(addr,data,we);
-    					mode = temp;
-						}
-						else
-						{
-							cache[set_number].block[i].dirty = DIRTY;
-  		  		}
-  				}
-  				else
-  				{
-  					cacheBlock tempBlock;
-  					switch(policy)
-  					{
-  						case LRU:
-  							tempBlock = handleLRU();
-  							break;
-  						case LFU:
-  							tempBlock = handleLFU();
-  							break;
-  						case RANDOM:
-  							tempBlock = handleRandom();
-  							break;
-  						default:
-  							append_log("Invalid flag for accessMemory\n");
-  					}
-  					if(memory_sync_policy == WRITE_BACK && tempBlock.dirty == DIRTY)
-						{
-							TransferUnit temp = mode;
-    					switchMode();
-    					accessDRAM(addr,tempBlock,we);
-    					mode = temp;  					}
-  				}
-  			}
-  		}
-  		break;
-  	default:
-  		append_log("Invalid flag for accessMemory\n");
+  	}
+  	highlight_block(index,block);
+  	higlight_offset(index,block,offest,MISS);
+  	accessDRAM(addr_no_offset,cache[index].block[block].data,uint_log2(block_size),READ);
+  	cache[index].block[block].valid = VALID;
+  	cache[index].block[block].dirty = VIRGIN;
+  	cache[index].block[block].tag = tag;
+  	cache[index].block[block].accessCount = 0;
+  	hit = -1;
+  }
+  else if(memory_sync_policy == WRITE_BACK && cache[index].block[block].dirty == DIRTY)
+  {
+  	accessDRAM(addr_no_offset,cache[index].block[block].data,uint_log2(block_size),WRITE);
+  }
+  if (hit != -1)
+  {
+  	highlight_block(index,block);
+  	higlight_offset(index,block,offest,HIT);
+  }
+
+  cache[index].block[block].lru.value = 0;
+  cache[index].block[block].accessCount++;
+  updateLRU(index,block);
+  if(we == READ)
+  {
+  	memcpy(data,cache[index].block[block].data+offset,transfer_size);
+  }
+  else 
+  {
+  	memcpy(cache[index].block[block].data+offset,data,transfer_size);
+  	if(memory_sync_policy == WRITE_THROUGH)
+  	{
+  		/*Transfers whohle block content. Transfers full block to memory */
+  		accessDRAM(addr_no_offset,cache[index].block[block].data,uint_log2(MAX_BLOCK_SIZE));
+  		cache[index].block[block].dirty = VIRGIN;
+  	}
+  	else
+  		cache[index].block[block].dirty = DIRTY;
 
   }
+
+
 
   /* This call to accessDRAM occurs when you modify any of the
      cache parameters. It is provided as a stop gap solution.
      At some point, ONCE YOU HAVE MORE OF YOUR CACHELOGIC IN PLACE,
      THIS LINE SHOULD BE REMOVED.
   */
-  accessDRAM(addr, (byte*)data, WORD_SIZE, we);
 }
