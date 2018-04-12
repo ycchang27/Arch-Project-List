@@ -75,32 +75,22 @@ int handleRandom() {
 
 /*
   This function handles LRU (least recently used) replacement policy. Returns a block index that has the highest LRU value.
+  Updates LRU value before returning.
 */
-int handleLRU(unsigned set) {
-  // int highest = 0;
-  // for(int i = 1;i < assoc;i++)
-  // {
-  //   if (cache[index].block[i].lru.value == 0)
-  //   {
-  //     updateLRU(index,i);
-  //     return i;
-  //   }
-  //   else if(cache[index].block[i].lru.value > cache[index].block[highest].lru.value)
-  //     highest = i;
-  // }
-  // updateLRU(index, highest);
-  // return highest;
-  unsigned int highest = 0;
+int handleLRU(unsigned index) {
+  unsigned highest = 0;
   int pos = 0;
 
-  for (int i = 0; i < assoc; i++)
+  for(int i = 0; i < assoc; i++)
   {
-    if (cache[set].block[i].lru.value == 0)
+    /* value is 0 (a candidate for replacement) */
+    if(cache[set].block[i].lru.value == 0)
     {
       updateLRU(set,i);
       return i;
     }
-    else if (cache[set].block[i].lru.value > highest)
+    /* value is initialized, so check whether it's highest */
+    else if(cache[set].block[i].lru.value > highest)
     {
       highest = cache[set].block[i].lru.value;
       pos = i;
@@ -127,21 +117,14 @@ int handleLFU(unsigned index) {
 
 /*Increments all blocks in LRU.value by one, except the one in use*/
 void updateLRU(unsigned index,unsigned block){
-  // for(int i = 0;i<assoc;i++)
-  // {
-  //   if(block != i)
-  //     cache[index].block[i].lru.value = (cache[index].block[i].lru.value + 1);
-  // }
-  unsigned int last = cache[index].block[block].lru.value;
+  /* increment the block by 1 if it is equal to 0 */
+  if(cache[index].block[block].lru.value == 0)
+    cache[index].block[block].lru.value = 1;
 
-  if (last == 0)
-    last = 1;
-
-  cache[index].block[block].lru.value = 1;
-
-  for (int i = 0; i < assoc; i++)
+  /* increment all other nonzero blocks' LRU values that are less or equal to this block's LRU value */
+  for(int i = 0; i < assoc; i++)
   {
-    if (cache[index].block[i].lru.value != 0 && i != block && (cache[index].block[i].lru.value < last || cache[index].block[i].lru.value == last))
+    if(i != block && cache[index].block[i].lru.value != 0 && cache[index].block[i].lru.value <= cache[index].block[block].lru.value)
       cache[index].block[i].lru.value++;
   }
 }
@@ -193,12 +176,9 @@ void accessMemory(address addr, word* data, WriteEnable we)
     return;
   }
 
-
   /* Determine whether this function reads or writes */
   int block = searchTag(index,tag);
   int hit = 0;
-
-
 
   /*If search fails (Cache miss?)*/
   if (block == -1 || cache[index].block[block].valid == INVALID)
@@ -226,10 +206,6 @@ void accessMemory(address addr, word* data, WriteEnable we)
     cache[index].block[block].dirty = VIRGIN;
     cache[index].block[block].tag = tag;
     cache[index].block[block].accessCount = 0;
-    cache[index].block[block].lru.value = 0;
-    // if(policy != LRU) {
-    //   updateLRU(index,block);
-    // }
     hit = -1;
   }
   else if(memory_sync_policy == WRITE_BACK && cache[index].block[block].dirty == DIRTY)
@@ -238,7 +214,6 @@ void accessMemory(address addr, word* data, WriteEnable we)
   }
   if (hit != -1)
   {
-    append_log("Hit\n");
     updateLRU(index,block);
     highlight_block(index,block);
     highlight_offset(index,block,offset,HIT);
