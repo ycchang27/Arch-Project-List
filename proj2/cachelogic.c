@@ -76,14 +76,39 @@ int handleRandom() {
 /*
   This function handles LRU (least recently used) replacement policy. Returns a block index that has the highest LRU value.
 */
-int handleLRU(unsigned index) {
-  int highest = 0;
-  for(int i = 1;i < assoc;i++)
+int handleLRU(unsigned set) {
+  // int highest = 0;
+  // for(int i = 1;i < assoc;i++)
+  // {
+  //   if (cache[index].block[i].lru.value == 0)
+  //   {
+  //     updateLRU(index,i);
+  //     return i;
+  //   }
+  //   else if(cache[index].block[i].lru.value > cache[index].block[highest].lru.value)
+  //     highest = i;
+  // }
+  // updateLRU(index, highest);
+  // return highest;
+  unsigned int highest = 0;
+  int pos = 0;
+
+  for (int i = 0; i < assoc; i++)
   {
-    if(cache[index].block[i].lru.value > cache[index].block[highest].lru.value)
-      highest = i;
+    if (cache[set].block[i].lru.value == 0)
+    {
+      updateLRU(set,i);
+      return i;
+    }
+    else if (cache[set].block[i].lru.value > highest)
+    {
+      highest = cache[set].block[i].lru.value;
+      pos = i;
+    }
   }
-  return highest;
+
+  updateLRU(set,pos);
+  return pos;
 }
 
 /*
@@ -102,10 +127,22 @@ int handleLFU(unsigned index) {
 
 /*Increments all blocks in LRU.value by one, except the one in use*/
 void updateLRU(unsigned index,unsigned block){
-  for(int i = 0;i<assoc;i++)
+  // for(int i = 0;i<assoc;i++)
+  // {
+  //   if(block != i)
+  //     cache[index].block[i].lru.value = (cache[index].block[i].lru.value + 1);
+  // }
+  unsigned int last = cache[index].block[block].lru.value;
+
+  if (last == 0)
+    last = 1;
+
+  cache[index].block[block].lru.value = 1;
+
+  for (int i = 0; i < assoc; i++)
   {
-    if(block != i)
-      cache[index].block[i].lru.value = (cache[index].block[i].lru.value + 1);
+    if (cache[index].block[i].lru.value != 0 && i != block && (cache[index].block[i].lru.value < last || cache[index].block[i].lru.value == last))
+      cache[index].block[i].lru.value++;
   }
 }
 
@@ -135,7 +172,6 @@ int searchTag(unsigned index,unsigned tag) {
 */
 void accessMemory(address addr, word* data, WriteEnable we)
 {
-  append_log("Access MEM Call\n");
   /* Declare variables here */
   unsigned offset_bits = uint_log2(block_size);
   unsigned index_bits = uint_log2(set_count);
@@ -167,6 +203,7 @@ void accessMemory(address addr, word* data, WriteEnable we)
   /*If search fails (Cache miss?)*/
   if (block == -1 || cache[index].block[block].valid == INVALID)
   {
+    append_log("Miss\n");
     if(block == -1)
     {
       switch(policy) 
@@ -184,13 +221,15 @@ void accessMemory(address addr, word* data, WriteEnable we)
           printf("Invalid Replacement Policy\n");
       }
     }
-    highlight_block(index,block);
-    highlight_offset(index,block,offset,MISS);
     accessDRAM(addr_no_offset,cache[index].block[block].data,uint_log2(block_size),READ);
     cache[index].block[block].valid = VALID;
     cache[index].block[block].dirty = VIRGIN;
     cache[index].block[block].tag = tag;
     cache[index].block[block].accessCount = 0;
+    cache[index].block[block].lru.value = 0;
+    // if(policy != LRU) {
+    //   updateLRU(index,block);
+    // }
     hit = -1;
   }
   else if(memory_sync_policy == WRITE_BACK && cache[index].block[block].dirty == DIRTY)
@@ -199,13 +238,18 @@ void accessMemory(address addr, word* data, WriteEnable we)
   }
   if (hit != -1)
   {
+    append_log("Hit\n");
+    updateLRU(index,block);
     highlight_block(index,block);
     highlight_offset(index,block,offset,HIT);
   }
-
-  cache[index].block[block].lru.value = 0;
-  cache[index].block[block].accessCount++;
-  updateLRU(index,block);
+  else
+  {
+    highlight_block(index,block);
+    highlight_offset(index,block,offset,MISS);
+  }
+  if(policy == LFU)
+    cache[index].block[block].accessCount++;
   if(we == READ)
   {
     memcpy(data,cache[index].block[block].data+offset,transfer_size);
