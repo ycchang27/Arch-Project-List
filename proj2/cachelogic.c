@@ -18,8 +18,10 @@ int randomint( int x );
  */
 char* lfu_to_string(int assoc_index, int block_index)
 {
+    append_log("LFTS Call\n");
+
   /* Buffer to print lfu information -- increase size as needed. */
-  static char buffer[9];
+    char buffer[9];
   sprintf(buffer, "%u", cache[assoc_index].block[block_index].accessCount);
 
   return buffer;
@@ -35,8 +37,10 @@ char* lfu_to_string(int assoc_index, int block_index)
  */
 char* lru_to_string(int assoc_index, int block_index)
 {
+    append_log("LTS Call\n");
+
   /* Buffer to print lru information -- increase size as needed. */
-  static char buffer[9];
+    char buffer[9];
   sprintf(buffer, "%u", cache[assoc_index].block[block_index].lru.value);
 
   return buffer;
@@ -81,9 +85,9 @@ int handleLRU(unsigned index) {
   for(int i = 1;i < assoc;i++)
   {
   	if(cache[index].block[i].lru.value > cache[index].block[highest].lru.value)
-  		lowest = i;
+  		highest = i;
   }
-  return lowest;
+  return highest;
 }
 
 /*
@@ -110,51 +114,16 @@ void updateLRU(unsigned index,unsigned block){
 }
 
 /*Searches for block index that contains the same tag as the one given.*/
-int searchTag(unsigned inedex,unsigned tag) {
-	for(int i = 0;i<assoc,i++)
+int searchTag(unsigned index,unsigned tag) {
+	for(int i = 0;i<assoc;i++)
 	{
-		if(cache[index].block[block].tag == tag)
+		if(cache[index].block[i].tag == tag)
 		{
 			return i;
 		}
 	}
 	return -1;
 }
-
-/*
-  This function handles write back memory sync policy.
-*/
-
-void switchMode(){
-  TranferUnit block_mode;
-  switch(block_size)
-  {
-  	case 1:
-  		block_mode = BYTE_SIZE;
-  		break;
-  	case 2:
-  		block_mode = HALF_WORD_SIZE;
-  		break;
-  	case 4:
-  		block_mode = WORD_SIZE;
-  		break;
-  	case 8:
-   		block_mode = DOUBLEWORD_SIZE;
-    	break;
-  	case 16:
-   		block_mode = QUADWORD_SIZE;
-    	break;
-  	case 32:
-    	block_mode = OCTWORD_SIZE;
-    	break;
-    default:
-   		append_log("Invalid transfer block_size for accessMemory\n");
-  }
-	mode = block_mode;
-
-}
-
-
 
 
 
@@ -173,17 +142,18 @@ void switchMode(){
 
 void accessMemory(address addr, word* data, WriteEnable we)
 {
+  append_log("Access MEM Call\n");
   /* Declare variables here */
-	static unsigned offset_bits = uint_log2(block_size);
-	static unsigned index_bits = uint_log2(set_count);
-	static unsigned tag_bits = 32 - offset_bits - index_bits;
+	unsigned offset_bits = uint_log2(block_size);
+	unsigned index_bits = uint_log2(set_count);
+	unsigned tag_bits = 32 - offset_bits - index_bits;
 
 	/*bit mask except this everytinh will be zero*/
-	static unsigned offset = addr&((1<<offset_bits)-1);
+	unsigned offset = addr&((1<<offset_bits)-1);
 	/*shifts to the right to ignore offset, masks bits*/
-	static unsigned index = (addr >> offset_bits) & ((1<<index_bits)-1);
-	static unsigned tag = addr >> (offset_bits + index_bits) & ((1 << tag_bits)-1)
- 	static unsigned addr_no_offset = addrs&~offset;
+	unsigned index = (addr >> offset_bits) & ((1<<index_bits)-1);
+	unsigned tag = addr >> (offset_bits + index_bits) & ((1 << tag_bits)-1);
+  unsigned addr_no_offset = addr&~offset;
 
  	/*Transfer out 4 bytes or one word*/
   unsigned int transfer_size = 4;
@@ -222,7 +192,7 @@ void accessMemory(address addr, word* data, WriteEnable we)
   		}
   	}
   	highlight_block(index,block);
-  	higlight_offset(index,block,offest,MISS);
+  	highlight_offset(index,block,offset,MISS);
   	accessDRAM(addr_no_offset,cache[index].block[block].data,uint_log2(block_size),READ);
   	cache[index].block[block].valid = VALID;
   	cache[index].block[block].dirty = VIRGIN;
@@ -237,7 +207,7 @@ void accessMemory(address addr, word* data, WriteEnable we)
   if (hit != -1)
   {
   	highlight_block(index,block);
-  	higlight_offset(index,block,offest,HIT);
+  	highlight_offset(index,block,offset,HIT);
   }
 
   cache[index].block[block].lru.value = 0;
@@ -253,7 +223,7 @@ void accessMemory(address addr, word* data, WriteEnable we)
   	if(memory_sync_policy == WRITE_THROUGH)
   	{
   		/*Transfers whohle block content. Transfers full block to memory */
-  		accessDRAM(addr_no_offset,cache[index].block[block].data,uint_log2(MAX_BLOCK_SIZE));
+  		accessDRAM(addr_no_offset,cache[index].block[block].data,uint_log2(MAX_BLOCK_SIZE),WRITE);
   		cache[index].block[block].dirty = VIRGIN;
   	}
   	else

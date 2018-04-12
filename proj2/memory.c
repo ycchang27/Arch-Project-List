@@ -140,29 +140,3 @@ int accessDRAM(address addr, byte* data, TransferUnit mode, WriteEnable flag)
 
   return error;
 }
-  /*
-  You need to read/write between memory (via the accessDRAM() function) and
-  the cache (via the cache[] global structure defined in tips.h)
-
-  Remember to read tips.h for all the global variables that tell you the
-  cache parameters
-
-  The same code should handle random, LFU, and LRU policies. Test the policy
-  variable (see tips.h) to decide which policy to execute. The LRU policy
-  should be written such that no two blocks (when their valid bit is VALID)
-  will ever be a candidate for replacement. In the case of a tie in the
-  least number of accesses for LFU, you use the LRU information to determine
-  which block to replace.
-
-  Your cache should be able to support write-through mode (any writes to
-  the cache get immediately copied to main memory also) and write-back mode
-  (and writes to the cache only gets copied to main memory when the block
-  is kicked out of the cache.
-
-  Also, cache should do allocate-on-write. This means, a write operation
-  will bring in an entire block if the block is not already in the cache.
-
-  To properly work with the GUI, the code needs to tell the GUI code
-  when to redraw and when to flash things. Descriptions of the animation
-  functions can be found in tips.h
-  */
